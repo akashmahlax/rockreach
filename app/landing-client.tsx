@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState, useEffect, useRef } from "react"
 
 interface FeatureCardProps {
@@ -91,10 +92,12 @@ export default function FeatureCarousel() {
                     activeCard === 0 ? "opacity-100 scale-100 blur-0" : "opacity-0 scale-95 blur-sm"
                   }`}
                 >
-                  <img
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/dsadsadsa.jpg-xTHS4hGwCWp2H5bTj8np6DXZUyrxX7.jpeg"
+                  <Image
+                    width={1000}
+                    height={1000}
+                    src="/leads.png"
                     alt="Schedules Dashboard"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 </div>
 
