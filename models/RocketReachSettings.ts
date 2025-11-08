@@ -22,8 +22,15 @@ export interface RocketReachSettings {
 
 export async function getRocketReachSettings(orgId: string) {
   const db = await getDb();
-  return db.collection<RocketReachSettings>(Collections.ROCKET_REACH_SETTINGS)
-    .findOne({ orgId });
+  const collection = db.collection<RocketReachSettings>(Collections.ROCKET_REACH_SETTINGS);
+
+  const settings = await collection.findOne({ orgId });
+
+  if (settings || orgId === 'default') {
+    return settings;
+  }
+
+  return collection.findOne({ orgId: 'default' });
 }
 
 export async function upsertRocketReachSettings(
