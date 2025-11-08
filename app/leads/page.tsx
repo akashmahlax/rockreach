@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { getDb, Collections } from "@/lib/db";
+import { ExportLeadsButton } from "@/components/export-leads-button";
+import { ImportLeadsButton } from "@/components/import-leads-button";
 
 interface Lead {
   _id?: unknown;
@@ -54,12 +56,8 @@ export default async function MyLeadsPage() {
             />
           </div>
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="border-[rgba(55,50,47,0.12)] text-[#37322F] hover:bg-white"
-            >
-              Export
-            </Button>
+            <ImportLeadsButton />
+            <ExportLeadsButton />
             <Button asChild className="bg-[#37322F] hover:bg-[#37322F]/90 text-white">
               <Link href="/leads/search">Search New Leads</Link>
             </Button>

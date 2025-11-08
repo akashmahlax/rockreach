@@ -124,7 +124,7 @@ async function rrFetch(
 }
 
 // RocketReach API Methods
-// Note: Replace endpoints with actual RocketReach API endpoints from their documentation
+// Using official RocketReach API v2 endpoints
 
 export async function rrSearchPeople(
   orgId: string,
@@ -138,15 +138,15 @@ export async function rrSearchPeople(
     page_size?: number;
   }
 ) {
-  return rrFetch(orgId, '/v2/api/search', {
+  return rrFetch(orgId, '/api/v2/search', {
     method: 'POST',
     body: {
       query: {
-        name: params.name,
-        current_title: params.title,
-        current_employer: params.company,
-        email_domain: params.domain,
-        location: params.location,
+        name: params.name ? [params.name] : undefined,
+        current_title: params.title ? [params.title] : undefined,
+        current_employer: params.company ? [params.company] : undefined,
+        email_domain: params.domain ? [params.domain] : undefined,
+        location: params.location ? [params.location] : undefined,
       },
       page_size: params.page_size || 25,
       start: params.page ? (params.page - 1) * (params.page_size || 25) : 0,
@@ -155,9 +155,9 @@ export async function rrSearchPeople(
 }
 
 export async function rrLookupProfile(orgId: string, personId: string) {
-  return rrFetch(orgId, `/v2/api/lookupProfile`, {
-    method: 'POST',
-    body: { id: personId },
+  return rrFetch(orgId, `/api/v2/person/lookup`, {
+    method: 'GET',
+    query: { id: personId },
   });
 }
 

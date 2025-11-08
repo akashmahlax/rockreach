@@ -27,10 +27,12 @@ interface LeadResult {
 
 export default function LeadsSearchPage() {
   const [query, setQuery] = useState({ name: '', title: '', company: '', domain: '', location: '' });
+  const [linkedinUrl, setLinkedinUrl] = useState('');
   const [results, setResults] = useState<LeadResult[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
 
   async function handleSearch() {
     setLoading(true);
@@ -93,6 +95,40 @@ export default function LeadsSearchPage() {
     }
   }
 
+  async function handleLinkedInLookup() {
+    if (!linkedinUrl.trim()) {
+      toast.error('Please enter a LinkedIn URL');
+      return;
+    }
+
+    setLookingUp(true);
+    try {
+      const res = await fetch('/api/leads/lookup-linkedin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkedinUrl: linkedinUrl.trim() }),
+      });
+
+      const json = await res.json();
+
+      if (json.ok) {
+        toast.success(json.message || 'Profile found and saved!');
+        setLinkedinUrl('');
+        // Add to results
+        if (json.data) {
+          setResults([json.data]);
+        }
+      } else {
+        toast.error(json.error || 'Lookup failed');
+      }
+    } catch (error) {
+      toast.error('Lookup failed');
+      console.error(error);
+    } finally {
+      setLookingUp(false);
+    }
+  }
+
   const selectedCount = Object.values(selected).filter(Boolean).length;
 
   return (
@@ -108,7 +144,53 @@ export default function LeadsSearchPage() {
             <CardTitle className="text-[#37322F]">Search Criteria</CardTitle>
             <CardDescription className="text-[#605A57]">Enter search parameters to find leads</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {/* LinkedIn URL Lookup */}
+            <div className="p-4 border border-[rgba(55,50,47,0.12)] rounded-lg bg-[#F7F5F3]">
+              <div className="flex items-center gap-2 mb-3">
+                <Linkedin className="w-5 h-5 text-[#0A66C2]" />
+                <Label className="text-[#37322F] font-semibold">LinkedIn URL Lookup</Label>
+              </div>
+              <p className="text-sm text-[#605A57] mb-3">
+                Paste a LinkedIn profile URL to instantly find and save contact information
+              </p>
+              <div className="flex gap-3">
+                <Input
+                  placeholder="https://linkedin.com/in/profile-name"
+                  value={linkedinUrl}
+                  onChange={(e) => setLinkedinUrl(e.target.value)}
+                  className="flex-1 bg-white border-[rgba(55,50,47,0.12)] text-[#37322F]"
+                  onKeyDown={(e) => e.key === 'Enter' && handleLinkedInLookup()}
+                />
+                <Button
+                  onClick={handleLinkedInLookup}
+                  disabled={lookingUp}
+                  className="bg-[#0A66C2] hover:bg-[#0A66C2]/90 text-white"
+                >
+                  {lookingUp ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Looking up...
+                    </>
+                  ) : (
+                    <>
+                      <Linkedin className="mr-2 h-4 w-4" />
+                      Lookup
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-[rgba(55,50,47,0.12)]" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-[#605A57]">Or search by criteria</span>
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-5 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-[#37322F]">Name</Label>

@@ -29,11 +29,16 @@ export async function findLeadByPersonId(orgId: string, personId: string) {
 
 export async function upsertLead(orgId: string, personId: string, data: Partial<Lead>) {
   const db = await getDb();
+  
+  // Remove orgId and personId from data to avoid conflict with filter and $setOnInsert
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { orgId: _, personId: __, ...updateData } = data;
+  
   return db.collection<Lead>(Collections.LEADS).findOneAndUpdate(
     { orgId, personId },
     {
       $set: {
-        ...data,
+        ...updateData,
         updatedAt: new Date(),
       },
       $setOnInsert: {

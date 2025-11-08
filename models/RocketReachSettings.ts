@@ -31,12 +31,17 @@ export async function upsertRocketReachSettings(
   data: Partial<RocketReachSettings>
 ) {
   const db = await getDb();
+  
+  // Remove orgId from data to avoid conflict with filter
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { orgId: _, ...updateData } = data;
+  
   return db.collection<RocketReachSettings>(Collections.ROCKET_REACH_SETTINGS)
     .findOneAndUpdate(
       { orgId },
       {
         $set: {
-          ...data,
+          ...updateData,
           updatedAt: new Date(),
         },
         $setOnInsert: {
