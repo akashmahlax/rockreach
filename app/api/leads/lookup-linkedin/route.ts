@@ -9,12 +9,14 @@ import { decryptSecret, type EncryptedData } from '@/lib/crypto';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
 
+  const orgId = session.user.orgId ?? session.user.email ?? 'default';
+
+  try {
     const body = await request.json();
     const { linkedinUrl } = body;
 
@@ -34,7 +36,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const orgId = 'default';
     const startTime = Date.now();
 
     // Get RocketReach settings
@@ -93,11 +94,6 @@ export async function POST(request: NextRequest) {
 
     const result = await response.json();
 
-    // Debug: Log what RocketReach returned
-    console.log('RocketReach result:', JSON.stringify(result, null, 2));
-    console.log('Emails from RocketReach:', result.emails);
-    console.log('Phones from RocketReach:', result.phones);
-
     if (!result || !result.id) {
       return NextResponse.json(
         { ok: false, error: 'Profile not found' },
@@ -139,12 +135,6 @@ export async function POST(request: NextRequest) {
       raw: result,
     };
 
-    // Debug: Log extracted data
-    console.log('Extracted leadData:', {
-      emails: leadData.emails,
-      phones: leadData.phones,
-    });
-
     const savedLead = await upsertLead(orgId, leadData.personId, leadData);
 
     // Log the action
@@ -185,7 +175,7 @@ export async function POST(request: NextRequest) {
     // Track failed API call
     try {
       await logApiUsage({
-        orgId: 'default',
+        orgId,
         provider: 'rocketreach',
         endpoint: '/api/v2/person/lookup',
         method: 'GET',

@@ -138,6 +138,10 @@ export async function rrSearchPeople(
     page_size?: number;
   }
 ) {
+  const pageSize = params.page_size && params.page_size > 0 ? params.page_size : 25;
+  const page = params.page && params.page > 0 ? params.page : 1;
+  const start = (page - 1) * pageSize + 1;
+
   return rrFetch(orgId, '/api/v2/search', {
     method: 'POST',
     body: {
@@ -148,8 +152,8 @@ export async function rrSearchPeople(
         email_domain: params.domain ? [params.domain] : undefined,
         location: params.location ? [params.location] : undefined,
       },
-      page_size: params.page_size || 25,
-      start: params.page ? (params.page - 1) * (params.page_size || 25) : 0,
+      page_size: pageSize,
+      start,
     },
   });
 }

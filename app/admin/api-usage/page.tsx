@@ -21,7 +21,6 @@ export default async function APIUsagePage() {
     redirect("/");
   }
 
-  // @ts-expect-error - role will be added to session
   if (session.user.role !== "admin") {
     redirect("/dashboard");
   }

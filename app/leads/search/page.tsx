@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Search, Loader2, Save, Mail, Phone, Linkedin, Building2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface LeadResult {
   id: string;
@@ -23,6 +24,8 @@ interface LeadResult {
   phones?: string[];
   linkedin_url?: string;
   location?: string;
+  email_domain?: string;
+  raw?: unknown;
 }
 
 export default function LeadsSearchPage() {
@@ -33,6 +36,64 @@ export default function LeadsSearchPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
+
+  const normalizeLead = (lead: unknown, fallbackIndex?: number): LeadResult => {
+    const record = (lead ?? {}) as Record<string, unknown>;
+
+    const makeStringArray = (input: unknown, field: 'email' | 'number'): string[] => {
+      if (!Array.isArray(input)) return [];
+      return input
+        .map((value) => {
+          if (typeof value === 'string') return value;
+          if (value && typeof value === 'object') {
+            const keyed = value as Record<string, unknown>;
+            const extracted = keyed[field];
+            if (typeof extracted === 'string') return extracted;
+          }
+          return null;
+        })
+        .filter((value): value is string => Boolean(value));
+    };
+
+    const getString = (value: unknown): string | undefined =>
+      typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+
+    const firstName = getString(record['first_name']);
+    const lastName = getString(record['last_name']);
+    const displayName =
+      getString(record['name']) ||
+      (firstName || lastName ? `${firstName ?? ''} ${lastName ?? ''}`.trim() : undefined) ||
+      'Unknown';
+
+    const candidateId =
+      record['id'] ??
+      record['rocketreach_id'] ??
+      record['person_id'] ??
+      record['profile_id'] ??
+      record['linkedin_url'] ??
+      (Array.isArray(record['emails']) ? (record['emails'] as unknown[])[0] : undefined);
+
+    const finalId = candidateId
+      ? String(candidateId)
+      : `lead-${fallbackIndex ?? Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    return {
+      id: finalId,
+      name: displayName,
+      first_name: firstName,
+      last_name: lastName,
+      current_title: getString(record['current_title']) ?? getString(record['title']),
+      title: getString(record['title']),
+      current_employer: getString(record['current_employer']),
+      company: getString(record['company']) ?? getString(record['current_employer']),
+      emails: makeStringArray(record['emails'], 'email'),
+      phones: makeStringArray(record['phones'], 'number'),
+      linkedin_url: getString(record['linkedin_url']),
+      location: getString(record['location']),
+      email_domain: getString(record['email_domain']),
+      raw: record,
+    };
+  };
 
   async function handleSearch() {
     setLoading(true);
@@ -49,9 +110,10 @@ export default function LeadsSearchPage() {
       const json = await res.json();
       
       if (json.ok) {
-        const leads = json.data?.profiles || json.data?.data || [];
-        setResults(leads);
-        toast.success(`Found ${leads.length} lead(s)`);
+        const rawLeads: unknown[] = json.data?.profiles || json.data?.data || [];
+        const normalized = rawLeads.map((lead, index: number) => normalizeLead(lead, index));
+        setResults(normalized);
+        toast.success(`Found ${normalized.length} lead(s)`);
       } else {
         toast.error(json.error || 'Search failed');
       }
@@ -96,34 +158,79 @@ export default function LeadsSearchPage() {
   }
 
   async function handleLinkedInLookup() {
-    if (!linkedinUrl.trim()) {
-      toast.error('Please enter a LinkedIn URL');
+    const trimmedInput = linkedinUrl.trim();
+
+    if (!trimmedInput) {
+      toast.error('Please enter at least one LinkedIn URL');
+      return;
+    }
+
+    const urls = Array.from(
+      new Set(
+        trimmedInput
+          .split(/[\s,;]+/)
+          .map((url) => url.trim())
+          .filter(Boolean)
+      )
+    );
+
+    if (urls.length === 0) {
+      toast.error('No valid LinkedIn URLs detected');
       return;
     }
 
     setLookingUp(true);
+
+    const foundLeads: LeadResult[] = [];
+    const failed: Array<{ url: string; reason: string }> = [];
+
     try {
-      const res = await fetch('/api/leads/lookup-linkedin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ linkedinUrl: linkedinUrl.trim() }),
-      });
+      for (const url of urls) {
+        try {
+          const res = await fetch('/api/leads/lookup-linkedin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ linkedinUrl: url }),
+          });
 
-      const json = await res.json();
+          const json = await res.json();
 
-      if (json.ok) {
-        toast.success(json.message || 'Profile found and saved!');
-        setLinkedinUrl('');
-        // Add to results
-        if (json.data) {
-          setResults([json.data]);
+          if (json.ok && json.data) {
+            foundLeads.push(normalizeLead(json.data));
+          } else {
+            failed.push({ url, reason: json.error || 'Lookup failed' });
+          }
+        } catch (error) {
+          console.error('Lookup failed for URL:', url, error);
+          failed.push({ url, reason: 'Network error' });
         }
-      } else {
-        toast.error(json.error || 'Lookup failed');
       }
-    } catch (error) {
-      toast.error('Lookup failed');
-      console.error(error);
+
+      if (foundLeads.length > 0) {
+        setResults((prev) => {
+          const deduped = new Map<string, LeadResult>();
+
+          const allLeads = [...prev, ...foundLeads];
+          allLeads.forEach((lead) => {
+            deduped.set(lead.id, lead);
+          });
+
+          return Array.from(deduped.values());
+        });
+
+        toast.success(`Saved ${foundLeads.length} profile${foundLeads.length === 1 ? '' : 's'}`);
+        setLinkedinUrl('');
+      }
+
+      if (failed.length > 0) {
+        failed.slice(0, 3).forEach(({ url, reason }) => {
+          toast.error(`${url}: ${reason}`);
+        });
+
+        if (failed.length > 3) {
+          toast.error(`${failed.length - 3} additional lookups failed`);
+        }
+      }
     } finally {
       setLookingUp(false);
     }
@@ -152,20 +259,20 @@ export default function LeadsSearchPage() {
                 <Label className="text-[#37322F] font-semibold">LinkedIn URL Lookup</Label>
               </div>
               <p className="text-sm text-[#605A57] mb-3">
-                Paste a LinkedIn profile URL to instantly find and save contact information
+                Paste one or more LinkedIn profile URLs (separate with commas or new lines) to enrich and save contacts.
               </p>
-              <div className="flex gap-3">
-                <Input
-                  placeholder="https://linkedin.com/in/profile-name"
+              <div className="flex flex-col md:flex-row gap-3">
+                <Textarea
+                  placeholder={"https://linkedin.com/in/profile-name\nhttps://linkedin.com/in/another-profile"}
                   value={linkedinUrl}
                   onChange={(e) => setLinkedinUrl(e.target.value)}
                   className="flex-1 bg-white border-[rgba(55,50,47,0.12)] text-[#37322F]"
-                  onKeyDown={(e) => e.key === 'Enter' && handleLinkedInLookup()}
+                  rows={4}
                 />
                 <Button
                   onClick={handleLinkedInLookup}
                   disabled={lookingUp}
-                  className="bg-[#0A66C2] hover:bg-[#0A66C2]/90 text-white"
+                  className="md:w-auto w-full bg-[#0A66C2] hover:bg-[#0A66C2]/90 text-white"
                 >
                   {lookingUp ? (
                     <>

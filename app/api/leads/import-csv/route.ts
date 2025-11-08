@@ -15,8 +15,11 @@ export async function POST(request: NextRequest) {
 
     // Get user's organization ID
     const user = await db.collection('users').findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    const orgId = user?.orgId ? String(user.orgId) : session.user.orgId ?? session.user.email;
+
+    if (!orgId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
     const formData = await request.formData();
@@ -45,7 +48,6 @@ export async function POST(request: NextRequest) {
     // Process rows
     const leads: Array<Record<string, unknown>> = [];
     const errors: Array<{ row: number; error: string }> = [];
-    const orgId = user.orgId || session.user.email;
 
     for (let i = 1; i < lines.length; i++) {
       try {
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
       action: 'import_leads_csv',
       target: 'leads',
       targetId: undefined,
-      actorId: user._id?.toString() || undefined,
+  actorId: user?._id?.toString(),
       actorEmail: session.user.email,
       meta: {
         filename: file.name,
@@ -124,7 +126,7 @@ export async function POST(request: NextRequest) {
         imported: insertedCount,
         errors: errors.length,
       },
-      orgId,
+    orgId,
     });
 
     return NextResponse.json({

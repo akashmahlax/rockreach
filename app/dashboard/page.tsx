@@ -12,7 +12,6 @@ export default async function DashboardPage() {
   }
 
   // Redirect admins to admin dashboard
-  // @ts-expect-error - role will be added to session
   if (session.user.role === "admin") {
     redirect("/admin");
   }

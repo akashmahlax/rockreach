@@ -27,7 +27,6 @@ function Badge({ icon, text }: { icon: React.ReactNode; text: string }) {
 
 export default async function LandingPage() {
   const session = await auth()
-  // @ts-expect-error - role added to session
   const user = session?.user ? { ...session.user, role: session.user.role } : null
 
   return (

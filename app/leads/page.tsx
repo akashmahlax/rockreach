@@ -7,9 +7,10 @@ import Link from "next/link";
 import { getDb, Collections } from "@/lib/db";
 import { ExportLeadsButton } from "@/components/export-leads-button";
 import { ImportLeadsButton } from "@/components/import-leads-button";
+import type { ObjectId } from "mongodb";
 
 interface Lead {
-  _id?: unknown;
+  _id?: ObjectId;
   name?: string;
   title?: string;
   company?: string;
@@ -26,11 +27,17 @@ export default async function MyLeadsPage() {
     redirect("/");
   }
 
+  const orgId = session.user.orgId ?? session.user.email;
+
+  if (!orgId) {
+    redirect("/dashboard");
+  }
+
   // Get leads from database
   const db = await getDb();
   const leads = await db
     .collection<Lead>(Collections.LEADS)
-    .find({ orgId: "default" })
+    .find({ orgId })
     .sort({ createdAt: -1 })
     .limit(50)
     .toArray();
@@ -161,9 +168,12 @@ export default async function MyLeadsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {leads.map((lead, index: number) => (
+                    {leads.map((lead, index: number) => {
+                      const leadId = lead._id?.toString();
+
+                      return (
                       <tr
-                        key={lead._id?.toString() || index}
+                        key={leadId ?? index}
                         className="border-b border-[rgba(55,50,47,0.06)] hover:bg-[#F7F5F3] transition-colors"
                       >
                         <td className="py-3 px-4 text-sm text-[#37322F] font-medium">
@@ -182,16 +192,20 @@ export default async function MyLeadsPage() {
                           {lead.phones?.[0] || "N/A"}
                         </td>
                         <td className="py-3 px-4 text-sm">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-[#37322F] hover:bg-[rgba(55,50,47,0.08)]"
-                          >
-                            View
-                          </Button>
+                          {leadId ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-[#37322F] hover:bg-[rgba(55,50,47,0.08)]"
+                              asChild
+                            >
+                              <Link href={`/leads/${leadId}`}>View</Link>
+                            </Button>
+                          ) : null}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

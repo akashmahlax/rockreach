@@ -28,11 +28,17 @@ export default async function LeadListsPage() {
     redirect("/");
   }
 
+  const orgId = session.user.orgId ?? session.user.email;
+
+  if (!orgId) {
+    redirect("/dashboard");
+  }
+
   // Get lead lists from database
   const db = await getDb();
   const lists = await db
     .collection<LeadList>(Collections.LEAD_LISTS)
-    .find({ orgId: "default" })
+    .find({ orgId })
     .sort({ updatedAt: -1 })
     .toArray();
 

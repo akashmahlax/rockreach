@@ -19,10 +19,20 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, title, company, domain, location, page, page_size } = body;
+    const {
+      name,
+      title,
+      company,
+      domain,
+      location,
+      page: requestedPage,
+      page_size: requestedPageSize,
+    } = body;
 
-    // TODO: Get orgId from session/user
-    const orgId = 'default';
+    const orgId = session.user?.orgId ?? session.user?.email ?? 'default';
+
+  const page = typeof requestedPage === 'number' && requestedPage > 0 ? requestedPage : 1;
+  const pageSize = typeof requestedPageSize === 'number' && requestedPageSize > 0 ? requestedPageSize : 25;
     
     const result = await rrSearchPeople(orgId, {
       name,
@@ -31,14 +41,14 @@ export async function POST(req: NextRequest) {
       domain,
       location,
       page,
-      page_size,
+      page_size: pageSize,
     });
 
     // Log the search
     await createLeadSearch({
       orgId,
       query: { name, title, company, domain, location },
-      filters: { page, page_size },
+      filters: { page, page_size: pageSize },
       resultCount: result?.profiles?.length || result?.data?.length || 0,
       executedBy: session.user?.email || undefined,
     });

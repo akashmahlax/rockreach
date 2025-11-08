@@ -5,7 +5,6 @@ import Link from "next/link"
 
 export async function Navbar() {
   const session = await auth();
-  // @ts-expect-error - role added to session
   const userRole = session?.user?.role;
 
   return (

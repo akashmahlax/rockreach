@@ -14,14 +14,17 @@ export async function GET() {
 
     // Get user's organization ID
     const user = await db.collection('users').findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    const orgId = user?.orgId ? String(user.orgId) : session.user.orgId ?? session.user.email;
+
+    if (!orgId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
     // Fetch all leads for this organization
     const leads = await db
       .collection('leads')
-      .find({ orgId: user.orgId || session.user.email })
+      .find({ orgId })
       .toArray();
 
     if (leads.length === 0) {

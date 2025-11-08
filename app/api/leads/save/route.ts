@@ -28,13 +28,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // TODO: Get orgId from session/user
-    const orgId = 'default';
+  const orgId = session.user?.orgId ?? session.user?.email ?? 'default';
     
     const savedLeads = [];
     
     for (const lead of leads) {
       // Normalize lead data from RocketReach format
+      const emails = Array.isArray(lead.emails)
+        ? lead.emails
+            .map((value: unknown) => {
+              if (typeof value === 'string') return value;
+              if (value && typeof value === 'object' && 'email' in value) {
+                const emailValue = (value as { email?: string }).email;
+                return emailValue ?? null;
+              }
+              return null;
+            })
+            .filter((value: string | null): value is string => Boolean(value))
+        : [];
+
+      const phones = Array.isArray(lead.phones)
+        ? lead.phones
+            .map((value: unknown) => {
+              if (typeof value === 'string') return value;
+              if (value && typeof value === 'object' && 'number' in value) {
+                const numberValue = (value as { number?: string }).number;
+                return numberValue ?? null;
+              }
+              return null;
+            })
+            .filter((value: string | null): value is string => Boolean(value))
+        : [];
+
       const leadData = {
         orgId,
         personId: lead.id || lead.rocketreach_id,
@@ -45,8 +70,8 @@ export async function POST(req: NextRequest) {
         title: lead.current_title || lead.title,
         company: lead.current_employer || lead.company,
         domain: lead.email_domain,
-        emails: lead.emails || [],
-        phones: lead.phones || [],
+        emails,
+        phones,
         linkedin: lead.linkedin_url,
         location: lead.location,
         tags: [],
@@ -63,7 +88,7 @@ export async function POST(req: NextRequest) {
     // Log the action
     await createAuditLog({
       orgId,
-      actorId: session.user?.email || undefined,
+  actorId: session.user?.id,
       actorEmail: session.user?.email || undefined,
       action: 'save_leads',
       target: 'leads',

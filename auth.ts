@@ -1,10 +1,9 @@
-
-import NextAuth from "next-auth"
+import NextAuth, { type NextAuthConfig } from "next-auth"
 import Google from "next-auth/providers/google"
 import { MongoDBAdapter } from "@auth/mongodb-adapter"
 import client, { getDb } from "@/lib/db"
- 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+
+const authConfig: NextAuthConfig = {
   providers: [Google],
   adapter: MongoDBAdapter(client),
   pages: {
@@ -12,26 +11,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async session({ session, user }) {
-      // Add user info to session
       if (session?.user) {
-        // Get user from database to check role
-        const db = await getDb();
-        const dbUser = await db.collection("users").findOne({ email: user.email });
-        
-        // Add role from database (default to 'user' if not set)
-        // @ts-expect-error - Extending user type with role
-        session.user.role = dbUser?.role || "user";
-        session.user.id = user.id;
+        const email = user.email ?? session.user.email ?? undefined;
+
+        if (email) {
+          const db = await getDb();
+          const dbUser = await db.collection("users").findOne({ email });
+
+          const resolvedOrgId = dbUser?.orgId ? String(dbUser.orgId) : session.user.email ?? undefined;
+
+          session.user.role = (dbUser?.role as string | undefined) ?? session.user.role ?? "user";
+          session.user.orgId = resolvedOrgId;
+        } else {
+          session.user.role = session.user.role ?? "user";
+        }
+
+        if (user.id) {
+          session.user.id = user.id;
+        }
       }
+
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // After sign in, redirect based on role
       if (url.startsWith(baseUrl)) {
-        // Default redirect to dashboard
         return `${baseUrl}/dashboard`;
       }
       return url;
     },
   },
-})
+}
+
+export const { handlers, signIn, signOut, auth } = NextAuth(authConfig)
