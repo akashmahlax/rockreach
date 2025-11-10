@@ -1,4 +1,4 @@
-# RocketReach Lead Generation System
+# Sea Lead Generation System
 
 A professional lead generation and management system built with Next.js, integrating the RocketReach API for finding and enriching prospect data.
 
