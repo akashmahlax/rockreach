@@ -31,7 +31,7 @@ export default async function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card className="border-[rgba(55,50,47,0.12)] bg-white hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle className="text-xl text-[#37322F]">RocketReach Settings</CardTitle>
+              <CardTitle className="text-xl text-[#37322F]">API Settings</CardTitle>
               <CardDescription className="text-[#605A57]">
                 Configure API keys and limits
               </CardDescription>
@@ -75,7 +75,7 @@ export default async function AdminDashboard() {
             <CardHeader>
               <CardTitle className="text-xl text-[#37322F]">API Usage</CardTitle>
               <CardDescription className="text-[#605A57]">
-                Monitor RocketReach API usage
+                Monitor API usage and activity
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -148,7 +148,7 @@ export default async function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-semibold text-[#37322F]">0</div>
-              <p className="text-xs text-[#605A57] mt-1">RocketReach API</p>
+              <p className="text-xs text-[#605A57] mt-1">Lead Gen API</p>
             </CardContent>
           </Card>
 

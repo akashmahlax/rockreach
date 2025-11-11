@@ -33,7 +33,7 @@ export default async function DashboardPage() {
             <CardHeader>
               <CardTitle className="text-xl text-[#37322F]">Search Leads</CardTitle>
               <CardDescription className="text-[#605A57]">
-                Find prospects using RocketReach
+                Find prospects using Logician
               </CardDescription>
             </CardHeader>
             <CardContent>

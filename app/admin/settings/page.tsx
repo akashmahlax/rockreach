@@ -95,22 +95,22 @@ export default function AdminSettingsPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div>
           <h1 className="text-3xl font-semibold text-[#37322F] font-serif">Admin Settings</h1>
-          <p className="text-[#605A57] mt-2">Manage your RocketReach integration and system configuration</p>
+          <p className="text-[#605A57] mt-2">Manage your API integration and system configuration</p>
         </div>
 
         <Card className="border-[rgba(55,50,47,0.12)] bg-white">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-[#37322F]" />
-              <CardTitle className="text-[#37322F]">RocketReach API Configuration</CardTitle>
+              <CardTitle className="text-[#37322F]">Lead Generation API Configuration</CardTitle>
             </div>
-            <CardDescription className="text-[#605A57]">Configure your RocketReach API settings and credentials</CardDescription>
+            <CardDescription className="text-[#605A57]">Configure your API settings and credentials</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-base text-[#37322F]">Enable RocketReach</Label>
-                <p className="text-sm text-[#605A57]">Turn on/off the RocketReach integration</p>
+                <Label className="text-base text-[#37322F]">Enable API</Label>
+                <p className="text-sm text-[#605A57]">Turn on/off the lead generation API integration</p>
               </div>
               <Switch checked={data.isEnabled} onCheckedChange={(v) => setData({ ...data, isEnabled: v })} />
             </div>
@@ -127,7 +127,7 @@ export default function AdminSettingsPage() {
                   placeholder="https://api.rocketreach.co"
                   className="bg-white border-[rgba(55,50,47,0.12)] text-[#37322F]"
                 />
-                <p className="text-sm text-[#605A57]">RocketReach API base URL</p>
+                <p className="text-sm text-[#605A57]">Lead Generation API base URL</p>
               </div>
 
               <div className="space-y-2">
@@ -135,13 +135,13 @@ export default function AdminSettingsPage() {
                 <Input
                   id="apiKey"
                   type="password"
-                  placeholder={data.hasApiKey ? '••••••••••••••••' : 'Enter your RocketReach API key'}
+                  placeholder={data.hasApiKey ? '••••••••••••••••' : 'Enter your API key'}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   className="bg-white border-[rgba(55,50,47,0.12)] text-[#37322F]"
                 />
                 <p className="text-sm text-[#605A57]">
-                  {data.hasApiKey ? 'Leave blank to keep existing key' : 'Required for RocketReach integration'}
+                  {data.hasApiKey ? 'Leave blank to keep existing key' : 'Required for API integration'}
                 </p>
               </div>
             </div>

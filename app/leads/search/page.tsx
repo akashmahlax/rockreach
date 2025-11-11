@@ -243,7 +243,7 @@ export default function LeadsSearchPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div>
           <h1 className="text-3xl font-semibold text-[#37322F] font-serif">Lead Search</h1>
-          <p className="text-[#605A57] mt-2">Find and save leads from RocketReach</p>
+          <p className="text-[#605A57] mt-2">Find and save leads using Logician</p>
         </div>
 
         <Card className="border-[rgba(55,50,47,0.12)] bg-white">

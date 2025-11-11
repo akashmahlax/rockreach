@@ -3,11 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  Menu, Moon, Sun, User, Settings, LogOut, ChevronDown, Home, Building2, 
-  Users, BarChart3, FileText, Search as SearchIcon, Upload, 
-  BookOpen, Code, Send, Inbox, LayoutTemplate, List 
-} from "lucide-react"
+import { Menu, Moon, Sun, User, Settings, LogOut, ChevronDown, Home, Building2, Users, BarChart3, Mail, FileText, Search as SearchIcon, Upload, BookOpen, Code, Send, Inbox, LayoutTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -51,6 +47,7 @@ interface UnifiedNavbarProps {
 }
 
 export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
+  const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
@@ -78,158 +75,146 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
         {/* Logo */}
         <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center space-x-2">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-            L
+            RR
           </div>
-          <span className="font-semibold text-lg hidden sm:inline-block">Logician</span>
+          <span className="font-semibold text-lg hidden sm:inline-block">RocketReach</span>
         </Link>
 
         {/* Desktop Navigation with dropdowns */}
         <div className="hidden md:flex items-center">
           <NavigationMenu>
             <NavigationMenuList>
-              {/* Home - Always visible */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Home</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-                    <li className="row-span-3">
-                      <NavigationMenuLink asChild>
-                        <Link
-                          className="flex h-full w-full select-none flex-col justify-end rounded-md bg-linear-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
-                          href="/"
-                        >
-                          <div className="mb-2 mt-4 text-lg font-medium">
-                            Logician
-                          </div>
-                          <p className="text-sm leading-tight text-muted-foreground">
-                            AI-powered lead generation and email outreach platform
-                          </p>
-                        </Link>
+              {/* Guest Navigation */}
+              {!isAuthenticated && (
+                <>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Home</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+                        <li className="row-span-3">
+                          <NavigationMenuLink asChild>
+                            <a
+                              className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
+                              href="/"
+                            >
+                              <div className="mb-2 mt-4 text-lg font-medium">
+                                RocketReach Lead Gen
+                              </div>
+                              <p className="text-sm leading-tight text-muted-foreground">
+                                Find and connect with prospects effortlessly using RocketReach API.
+                              </p>
+                            </a>
+                          </NavigationMenuLink>
+                        </li>
+                        <ListItem href="#features" title="Features">
+                          Discover powerful lead generation capabilities
+                        </ListItem>
+                        <ListItem href="#pricing" title="Pricing">
+                          Simple, transparent pricing for every team
+                        </ListItem>
+                        <ListItem href="#faq" title="FAQ">
+                          Frequently asked questions and answers
+                        </ListItem>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link href="#features" legacyBehavior passHref>
+                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                        Features
                       </NavigationMenuLink>
-                    </li>
-                    <ListItem href="#features" title="Features">
-                      Discover powerful lead generation capabilities
-                    </ListItem>
-                    <ListItem href="#pricing" title="Pricing">
-                      Simple, transparent pricing for every team
-                    </ListItem>
-                    <ListItem href="#faq" title="FAQ">
-                      Frequently asked questions and answers
-                    </ListItem>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* Dashboard - Only for authenticated users */}
-              {isAuthenticated && (
-                <NavigationMenuItem>
-                  <Link href="/dashboard" legacyBehavior passHref>
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                      Dashboard
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
+                    </Link>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link href="#pricing" legacyBehavior passHref>
+                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                        Pricing
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                </>
               )}
 
-              {/* Leads - For authenticated users */}
-              {isAuthenticated && (
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Leads</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid gap-3 p-4 md:w-[450px] lg:w-[550px] lg:grid-cols-2">
-                      <ListItem href="/leads/search" title="Search Leads" icon={<SearchIcon className="h-4 w-4" />}>
-                        Find prospects by LinkedIn or email
-                      </ListItem>
-                      <ListItem href="/leads/bulk" title="Bulk Upload" icon={<Upload className="h-4 w-4" />}>
-                        Upload company list + roles for bulk enrichment
-                      </ListItem>
-                      <ListItem href="/leads" title="My Leads" icon={<Users className="h-4 w-4" />}>
-                        View and manage your saved leads
-                      </ListItem>
-                      <ListItem href="/leads/lists" title="Lead Lists" icon={<List className="h-4 w-4" />}>
-                        Organize leads into custom lists
-                      </ListItem>
-                      <ListItem href="/leads/advanced-search" title="Advanced Search" icon={<Building2 className="h-4 w-4" />}>
-                        Search by company + niche + designation
-                      </ListItem>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
+              {/* User Navigation */}
+              {isAuthenticated && !isAdmin && (
+                <>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Leads</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
+                        <ListItem href="/leads/search" title="Search Leads" icon={<SearchIcon className="h-4 w-4" />}>
+                          Find new prospects with RocketReach
+                        </ListItem>
+                        <ListItem href="/leads" title="My Leads" icon={<Users className="h-4 w-4" />}>
+                          View and manage your saved leads
+                        </ListItem>
+                        <ListItem href="/leads/lists" title="Lead Lists" icon={<FileText className="h-4 w-4" />}>
+                          Organize leads into custom lists
+                        </ListItem>
+                        <ListItem href="/dashboard" title="Dashboard" icon={<BarChart3 className="h-4 w-4" />}>
+                          Overview and analytics
+                        </ListItem>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link href="/dashboard" legacyBehavior passHref>
+                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                        Dashboard
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                </>
               )}
 
-              {/* Docs - For authenticated users */}
-              {isAuthenticated && (
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Docs</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[450px] lg:grid-cols-2">
-                      <ListItem href="/docs/guide" title="Platform Guide" icon={<BookOpen className="h-4 w-4" />}>
-                        Learn how to use Logician effectively
-                      </ListItem>
-                      <ListItem href="/docs/api" title="API Integration" icon={<Code className="h-4 w-4" />}>
-                        Integrate Logician API in your apps
-                      </ListItem>
-                      <ListItem href="/docs/bulk-upload" title="Bulk Upload Guide" icon={<Upload className="h-4 w-4" />}>
-                        How to upload companies and extract leads
-                      </ListItem>
-                      <ListItem href="/docs/email-outreach" title="Email Campaigns" icon={<Send className="h-4 w-4" />}>
-                        Setup AI-powered email campaigns
-                      </ListItem>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              )}
-
-              {/* Email - For authenticated users */}
-              {isAuthenticated && (
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Email</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
-                      <ListItem href="/email/campaigns" title="Campaigns" icon={<Send className="h-4 w-4" />}>
-                        Create and manage email campaigns
-                      </ListItem>
-                      <ListItem href="/email/templates" title="Templates" icon={<LayoutTemplate className="h-4 w-4" />}>
-                        AI-generated email templates
-                      </ListItem>
-                      <ListItem href="/email/inbox" title="Inbox" icon={<Inbox className="h-4 w-4" />}>
-                        Track responses in unified inbox
-                      </ListItem>
-                      <ListItem href="/email/settings" title="Email Settings" icon={<Settings className="h-4 w-4" />}>
-                        Configure SMTP and email accounts
-                      </ListItem>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              )}
-
-              {/* Admin - Only for admins */}
+              {/* Admin Navigation */}
               {isAdmin && (
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid gap-3 p-4 md:w-[500px] lg:w-[600px] lg:grid-cols-2">
-                      <ListItem href="/admin" title="Admin Dashboard" icon={<Home className="h-4 w-4" />}>
-                        System overview and analytics
-                      </ListItem>
-                      <ListItem href="/admin/users" title="User Management" icon={<Users className="h-4 w-4" />}>
-                        Manage users and permissions
-                      </ListItem>
-                      <ListItem href="/admin/organizations" title="Organizations" icon={<Building2 className="h-4 w-4" />}>
-                        Manage organizations and settings
-                      </ListItem>
-                      <ListItem href="/admin/settings" title="Settings" icon={<Settings className="h-4 w-4" />}>
-                        System configuration and API keys
-                      </ListItem>
-                      <ListItem href="/admin/api-usage" title="API Usage" icon={<BarChart3 className="h-4 w-4" />}>
-                        Monitor API consumption and limits
-                      </ListItem>
-                      <ListItem href="/admin/audit-logs" title="Audit Logs" icon={<FileText className="h-4 w-4" />}>
-                        View system activity logs
-                      </ListItem>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
+                <>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid gap-3 p-4 md:w-[500px] lg:w-[600px] lg:grid-cols-2">
+                        <ListItem href="/admin" title="Admin Dashboard" icon={<Home className="h-4 w-4" />}>
+                          System overview and analytics
+                        </ListItem>
+                        <ListItem href="/admin/users" title="User Management" icon={<Users className="h-4 w-4" />}>
+                          Manage users and permissions
+                        </ListItem>
+                        <ListItem href="/admin/organizations" title="Organizations" icon={<Building2 className="h-4 w-4" />}>
+                          Manage organizations and settings
+                        </ListItem>
+                        <ListItem href="/admin/settings" title="Settings" icon={<Settings className="h-4 w-4" />}>
+                          System configuration and API keys
+                        </ListItem>
+                        <ListItem href="/admin/api-usage" title="API Usage" icon={<BarChart3 className="h-4 w-4" />}>
+                          Monitor API consumption and limits
+                        </ListItem>
+                        <ListItem href="/admin/audit-logs" title="Audit Logs" icon={<FileText className="h-4 w-4" />}>
+                          View system activity logs
+                        </ListItem>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Leads</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
+                        <ListItem href="/leads/search" title="Search Leads" icon={<SearchIcon className="h-4 w-4" />}>
+                          Find new prospects with RocketReach
+                        </ListItem>
+                        <ListItem href="/leads" title="My Leads" icon={<Users className="h-4 w-4" />}>
+                          View and manage your saved leads
+                        </ListItem>
+                        <ListItem href="/leads/lists" title="Lead Lists" icon={<FileText className="h-4 w-4" />}>
+                          Organize leads into custom lists
+                        </ListItem>
+                        <ListItem href="/dashboard" title="Dashboard" icon={<BarChart3 className="h-4 w-4" />}>
+                          Overview and analytics
+                        </ListItem>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </>
               )}
             </NavigationMenuList>
           </NavigationMenu>
@@ -307,7 +292,7 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] sm:w-[350px] overflow-y-auto">
+            <SheetContent side="right" className="w-[280px] sm:w-[350px]">
               <SheetHeader>
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>
@@ -327,21 +312,32 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
 
                 <div className="border-t pt-4">
                   <div className="flex flex-col space-y-2">
-                    <MobileNavLink href="/" onClick={() => setMobileOpen(false)}>
-                      Home
-                    </MobileNavLink>
-                    
-                    {isAuthenticated && (
+                    {/* Guest Mobile Links */}
+                    {!isAuthenticated && (
+                      <>
+                        <MobileNavLink href="/" onClick={() => setMobileOpen(false)}>
+                          Home
+                        </MobileNavLink>
+                        <MobileNavLink href="#features" onClick={() => setMobileOpen(false)}>
+                          Features
+                        </MobileNavLink>
+                        <MobileNavLink href="#pricing" onClick={() => setMobileOpen(false)}>
+                          Pricing
+                        </MobileNavLink>
+                        <MobileNavLink href="#faq" onClick={() => setMobileOpen(false)}>
+                          FAQ
+                        </MobileNavLink>
+                      </>
+                    )}
+
+                    {/* User Mobile Links */}
+                    {isAuthenticated && !isAdmin && (
                       <>
                         <MobileNavLink href="/dashboard" onClick={() => setMobileOpen(false)}>
                           Dashboard
                         </MobileNavLink>
-                        <div className="pl-2 text-xs font-semibold text-muted-foreground mt-2">Leads</div>
                         <MobileNavLink href="/leads/search" onClick={() => setMobileOpen(false)}>
                           Search Leads
-                        </MobileNavLink>
-                        <MobileNavLink href="/leads/bulk" onClick={() => setMobileOpen(false)}>
-                          Bulk Upload
                         </MobileNavLink>
                         <MobileNavLink href="/leads" onClick={() => setMobileOpen(false)}>
                           My Leads
@@ -349,31 +345,12 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
                         <MobileNavLink href="/leads/lists" onClick={() => setMobileOpen(false)}>
                           Lead Lists
                         </MobileNavLink>
-                        
-                        <div className="pl-2 text-xs font-semibold text-muted-foreground mt-2">Docs</div>
-                        <MobileNavLink href="/docs/guide" onClick={() => setMobileOpen(false)}>
-                          Platform Guide
-                        </MobileNavLink>
-                        <MobileNavLink href="/docs/api" onClick={() => setMobileOpen(false)}>
-                          API Integration
-                        </MobileNavLink>
-                        
-                        <div className="pl-2 text-xs font-semibold text-muted-foreground mt-2">Email</div>
-                        <MobileNavLink href="/email/campaigns" onClick={() => setMobileOpen(false)}>
-                          Campaigns
-                        </MobileNavLink>
-                        <MobileNavLink href="/email/templates" onClick={() => setMobileOpen(false)}>
-                          Templates
-                        </MobileNavLink>
-                        <MobileNavLink href="/email/inbox" onClick={() => setMobileOpen(false)}>
-                          Inbox
-                        </MobileNavLink>
                       </>
                     )}
 
+                    {/* Admin Mobile Links */}
                     {isAdmin && (
                       <>
-                        <div className="pl-2 text-xs font-semibold text-muted-foreground mt-2">Admin</div>
                         <MobileNavLink href="/admin" onClick={() => setMobileOpen(false)}>
                           Admin Dashboard
                         </MobileNavLink>
@@ -382,6 +359,12 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
                         </MobileNavLink>
                         <MobileNavLink href="/admin/organizations" onClick={() => setMobileOpen(false)}>
                           Organizations
+                        </MobileNavLink>
+                        <MobileNavLink href="/leads/search" onClick={() => setMobileOpen(false)}>
+                          Search Leads
+                        </MobileNavLink>
+                        <MobileNavLink href="/admin/settings" onClick={() => setMobileOpen(false)}>
+                          Settings
                         </MobileNavLink>
                       </>
                     )}

@@ -97,7 +97,7 @@ export default async function APIUsagePage() {
         <div className="mb-8">
           <h1 className="text-3xl font-semibold text-[#37322F] font-serif">API Usage Monitor</h1>
           <p className="text-[#605A57] mt-2">
-            Track RocketReach API usage and monitor system activity
+            Track API usage and monitor system activity
           </p>
         </div>
 
@@ -163,7 +163,7 @@ export default async function APIUsagePage() {
           <CardHeader>
             <CardTitle className="text-xl text-[#37322F]">Top Endpoints</CardTitle>
             <CardDescription className="text-[#605A57]">
-              Most frequently called RocketReach endpoints
+              Most frequently called API endpoints
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -223,7 +223,7 @@ export default async function APIUsagePage() {
           <CardHeader>
             <CardTitle className="text-xl text-[#37322F]">Recent API Calls</CardTitle>
             <CardDescription className="text-[#605A57]">
-              Latest RocketReach API activity
+              Latest API activity
             </CardDescription>
           </CardHeader>
           <CardContent>

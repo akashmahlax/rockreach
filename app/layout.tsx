@@ -24,9 +24,9 @@ const instrumentSerif = Instrument_Serif({
 })
 
 export const metadata: Metadata = {
-  title: "RocketReach Lead Gen - Find and Connect with Prospects",
+  title: "Logician - AI-Powered Lead Generation & Email Outreach",
   description:
-    "Streamline your lead generation process with RocketReach API integration. Find contacts, build lists, and grow your business.",
+    "Streamline your lead generation process with Logician. Find contacts, build lists, automate email campaigns, and grow your business with AI.",
 }
 
 export default function RootLayout({
