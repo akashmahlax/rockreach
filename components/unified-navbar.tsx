@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { 
   Menu, Moon, Sun, User, Settings, LogOut, ChevronDown, Home, Building2, 
   Users, BarChart3, FileText, Search as SearchIcon, Upload, 
@@ -217,6 +216,9 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
                       </ListItem>
                       <ListItem href="/admin/organizations" title="Organizations" icon={<Building2 className="h-4 w-4" />}>
                         Manage organizations and settings
+                      </ListItem>
+                      <ListItem href="/admin/providers" title="Provider Management" icon={<Settings className="h-4 w-4" />}>
+                        Configure AI and email providers
                       </ListItem>
                       <ListItem href="/admin/settings" title="Settings" icon={<Settings className="h-4 w-4" />}>
                         System configuration and API keys

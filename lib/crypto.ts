@@ -82,3 +82,7 @@ export function decryptSecret(encrypted: EncryptedData | null): string | null {
     throw new Error('Failed to decrypt secret');
   }
 }
+
+// Simplified aliases for ProviderSettings
+export const encrypt = encryptSecret;
+export const decrypt = decryptSecret;

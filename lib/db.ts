@@ -60,4 +60,9 @@ export const Collections = {
   API_USAGE: 'api_usage',
   AUDIT_LOGS: 'audit_logs',
   ORGANIZATIONS: 'organizations',
+  AI_PROVIDERS: 'ai_providers',
+  EMAIL_PROVIDERS: 'email_providers',
+  AGENT_TASKS: 'agent_tasks',
+  EMAIL_CAMPAIGNS: 'email_campaigns',
+  EMAIL_TRACKING: 'email_tracking',
 } as const
