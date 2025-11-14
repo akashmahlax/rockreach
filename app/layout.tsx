@@ -3,8 +3,9 @@ import type { Metadata } from "next"
 import { Inter, Instrument_Serif } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
-import { ThemeProvider } from "@/components/theme-provider"
-import { AppShell } from "@/components/app-shell"
+import { auth } from "@/auth"
+import { UnifiedNavbar } from "@/components/unified-navbar"
+
 
 
 
@@ -24,32 +25,29 @@ const instrumentSerif = Instrument_Serif({
 })
 
 export const metadata: Metadata = {
-  title: "Logician - AI-Powered Lead Generation & Email Outreach",
+  title: "RocketReach Lead Gen - Find and Connect with Prospects",
   description:
-    "Streamline your lead generation process with Logician. Find contacts, build lists, automate email campaigns, and grow your business with AI.",
+    "Streamline your lead generation process with RocketReach API integration. Find contacts, build lists, and grow your business.",
 }
 
-export default function RootLayout({
+export const runtime = 'nodejs'
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const session = await auth()
+  const user = session?.user ? { ...session.user, role: session.user.role } : null
+
   return (
-    <html lang="en" className={`${inter.variable} ${instrumentSerif.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${instrumentSerif.variable} antialiased`}>
       <head>
       </head>
       <body className="font-sans antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AppShell>
-            {children}
-          </AppShell>
-          <Toaster position="top-right" richColors closeButton />
-        </ThemeProvider>
+       <UnifiedNavbar user={user} />
+          {children}
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   )

@@ -2,14 +2,15 @@
 "use client"
 
 import { signIn } from "next-auth/react"
+import { Button } from "../ui/button"
  
 export default function SignIn() {
   return (
-    <button 
+    <Button 
       onClick={() => signIn("google")}
-      className="flex flex-col justify-center text-[#37322F] text-xs md:text-[13px] font-medium leading-5 font-sans hover:text-[#37322F]/80 transition-colors"
+      className="bg-linear-to-t from-amber-300 to-gray-100 font-sans font-bold text-gray-800 hover:border transition-all px-4 py-2"
     >
       Log in
-    </button>
+    </Button>
   )
 }

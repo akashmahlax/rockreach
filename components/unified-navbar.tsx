@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { 
   Menu, Moon, Sun, User, Settings, LogOut, ChevronDown, Home, Building2, 
   Users, BarChart3, FileText, Search as SearchIcon, Upload, 
@@ -72,14 +73,14 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
   }
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+    <nav className="sticky bg-linear-to-t  top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="flex h-16 items-center justify-between px-4 md:px-6 lg:px-8 max-w-full mx-auto">
         {/* Logo */}
         <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center space-x-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+          <div className="flex lg:hidden items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
             L
           </div>
-          <span className="font-semibold text-lg hidden sm:inline-block">Logician</span>
+          <span className="font-semibold font-sans bg-linear-to-t from-amber-200 to-white p-2 border border-gray-100 rounded-2xl text-lg hidden sm:inline-block">LogiGrow</span>
         </Link>
 
         {/* Desktop Navigation with dropdowns */}
@@ -98,7 +99,7 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
                           href="/"
                         >
                           <div className="mb-2 mt-4 text-lg font-medium">
-                            Logician
+                            LogiGrow
                           </div>
                           <p className="text-sm leading-tight text-muted-foreground">
                             AI-powered lead generation and email outreach platform
@@ -217,9 +218,6 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
                       <ListItem href="/admin/organizations" title="Organizations" icon={<Building2 className="h-4 w-4" />}>
                         Manage organizations and settings
                       </ListItem>
-                      <ListItem href="/admin/providers" title="Provider Management" icon={<Settings className="h-4 w-4" />}>
-                        Configure AI and email providers
-                      </ListItem>
                       <ListItem href="/admin/settings" title="Settings" icon={<Settings className="h-4 w-4" />}>
                         System configuration and API keys
                       </ListItem>
@@ -296,9 +294,9 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="default" size="sm">
+           
               <SignIn />
-            </Button>
+            
           )}
 
           {/* Mobile Menu */}

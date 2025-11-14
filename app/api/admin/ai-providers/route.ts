@@ -27,7 +27,7 @@ export async function GET() {
     const safeProviders = providers.map(p => ({
       ...p,
       apiKey: undefined,
-      hasApiKey: p.hasApiKey,
+      hasCredentials: p.hasCredentials,
     }));
 
     return NextResponse.json({ providers: safeProviders });

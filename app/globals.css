@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -125,4 +126,10 @@
 
 .backdrop-blur-custom {
   backdrop-filter: blur(8.25px);
+}
+
+@layer components {
+  .btn-bg {
+    @apply rounded-4xl font-stretch-expanded font-bold font-sans bg-slate-50 text-gray-800 hover:bg-amber-500 hover:text-white hover:border-2 border-amber-500 transition-all px-8 py-8 text-lg;
+  }
 }
