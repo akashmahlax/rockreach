@@ -203,16 +203,15 @@ export function MessageBubble({
         </div>
         
         {/* Action Buttons */}
-        {!isUser && (
+        {!isUser && message.parts.some(part => part.type === "text" && part.text.trim().length > 0) && (
           <div className="mt-2 flex gap-1">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => onCopy(message)}
-              className="h-7 px-2 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              className="h-7 w-7 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             >
-              <Copy className="h-3 w-3 mr-1" />
-              Copy
+              <Copy className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}

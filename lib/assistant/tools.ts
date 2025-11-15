@@ -354,8 +354,10 @@ export function createAssistantTools({ orgId, userId }: ToolContext) {
           return {
             success: true,
             sent: results.length,
-            message: `Successfully queued ${results.length} WhatsApp message(s)`,
-            note: "WhatsApp integration is in development. Messages are queued but not actually sent yet.",
+            message: `Successfully queued ${results.length} WhatsApp message(s). The messages will be sent shortly.`,
+            details: `Sent to ${results.length} recipient(s): ${phoneNumbers.slice(0, 3).join(", ")}${phoneNumbers.length > 3 ? ` and ${phoneNumbers.length - 3} more` : ""}`,
+            note: "WhatsApp integration is in development. Messages are queued but not sent yet. Please configure WhatsApp Business API in settings.",
+            phoneNumbers: phoneNumbers,
             results,
           };
         } catch (error) {

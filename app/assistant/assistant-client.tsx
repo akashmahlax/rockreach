@@ -28,9 +28,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, UIMessage } from "ai";
 import Link from "next/link";
-import { MessageBubble } from "@/components/assistant/message-bubble";
-import { EmptyState } from "@/components/assistant/empty-state";
-import { LoadingOverlay } from "@/components/assistant/loading-overlay";
+import { MessageBubble } from "@/components/c/message-bubble";
+import { EmptyState } from "@/components/c/empty-state";
+import { LoadingOverlay } from "@/components/c/loading-overlay";
 
 interface AssistantClientProps {
   user: {
@@ -144,22 +144,35 @@ export function AssistantClient({ user }: AssistantClientProps) {
       console.log('[useChat] onFinish:', { message, messageCount: messages.length });
       
       if (activeConvId) {
-        setConversations((prev) => {
-          const updated = prev.map((c) => {
-            if (c.id === activeConvId) {
-              const updatedMessages = [...messages, message];
-              const updatedConv = { ...c, messages: updatedMessages };
-              
-              // Save to MongoDB asynchronously
-              saveConversation(updatedConv);
-              
-              return updatedConv;
+        // Get the current conversation
+        const currentConv = conversations.find((c) => c.id === activeConvId);
+        
+        if (currentConv) {
+          // Include the new assistant message in the updated messages
+          const updatedMessages = [...messages, message];
+          
+          const updatedConv = { 
+            ...currentConv, 
+            messages: updatedMessages,
+            metadata: {
+              ...currentConv.metadata,
+              lastUpdated: new Date().toISOString(),
             }
-            return c;
+          };
+          
+          console.log('[onFinish] Saving to MongoDB:', {
+            convId: activeConvId,
+            messageCount: updatedMessages.length,
           });
           
-          return updated;
-        });
+          // Save to MongoDB immediately
+          saveConversation(updatedConv);
+          
+          // Update local state
+          setConversations((prev) =>
+            prev.map((c) => (c.id === activeConvId ? updatedConv : c))
+          );
+        }
       }
       setThinkingSteps([]);
     },
@@ -190,15 +203,41 @@ export function AssistantClient({ user }: AssistantClientProps) {
 
   const activeConv = conversations.find((c) => c.id === activeConvId);
 
-  // Load messages when switching conversations
+  // Load messages when switching conversations - fetch from MongoDB
   useEffect(() => {
-    if (activeConvId && activeConv) {
-      setMessages(activeConv.messages);
-    } else if (!activeConvId) {
-      setMessages([]);
-    }
+    const loadConversationMessages = async () => {
+      if (activeConvId && activeConv) {
+        console.log('[Conversation Switch] Fetching messages from MongoDB:', {
+          convId: activeConv.id,
+        });
+        
+        try {
+          // Fetch full conversation data from MongoDB with all messages
+          const res = await fetch(`/api/assistant/conversations?id=${activeConvId}`);
+          if (res.ok) {
+            const fullConversation = await res.json();
+            console.log('[Conversation Switch] Loaded from DB:', {
+              messageCount: fullConversation.messages?.length || 0,
+            });
+            setMessages(fullConversation.messages || []);
+          } else {
+            // Fallback to cached data if API fails
+            console.warn('[Conversation Switch] API failed, using cached data');
+            setMessages(activeConv.messages || []);
+          }
+        } catch (error) {
+          console.error('[Conversation Switch] Error loading messages:', error);
+          // Fallback to cached data
+          setMessages(activeConv.messages || []);
+        }
+      } else if (!activeConvId) {
+        setMessages([]);
+      }
+    };
+    
+    loadConversationMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConvId, activeConv?.id]);
+  }, [activeConvId]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -345,30 +384,37 @@ export function AssistantClient({ user }: AssistantClientProps) {
   };
 
   const deleteConversation = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this conversation?")) {
-      return;
-    }
-    
-    try {
-      const res = await fetch(`/api/assistant/conversations?id=${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (res.ok) {
-        setConversations((prev) => prev.filter((c) => c.id !== id));
-        if (activeConvId === id) {
-          const remaining = conversations.filter((c) => c.id !== id);
-          setActiveConvId(remaining[0]?.id || null);
-          setMessages([]);
-        }
-        toast.success("Conversation deleted");
-      } else {
-        toast.error('Failed to delete conversation');
-      }
-    } catch (error) {
-      console.error('Error deleting conversation:', error);
-      toast.error('Failed to delete conversation');
-    }
+    toast.info('Delete conversation?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          try {
+            const res = await fetch(`/api/assistant/conversations?id=${id}`, {
+              method: 'DELETE',
+            });
+            
+            if (res.ok) {
+              setConversations((prev) => prev.filter((c) => c.id !== id));
+              if (activeConvId === id) {
+                const remaining = conversations.filter((c) => c.id !== id);
+                setActiveConvId(remaining[0]?.id || null);
+                setMessages([]);
+              }
+              toast.success("Conversation deleted");
+            } else {
+              toast.error('Failed to delete conversation');
+            }
+          } catch (error) {
+            console.error('Error deleting conversation:', error);
+            toast.error('Failed to delete conversation');
+          }
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {},
+      },
+    });
   };
 
   const startRenameConversation = (id: string) => {
@@ -499,8 +545,26 @@ export function AssistantClient({ user }: AssistantClientProps) {
       }
     }
 
+    // Send the message
     sendMessage({ text: localInput });
     setLocalInput("");
+    
+    // Save user message to MongoDB after a short delay (to ensure it's in messages state)
+    setTimeout(() => {
+      if (activeConvId) {
+        const currentConv = conversations.find((c) => c.id === activeConvId);
+        if (currentConv) {
+          console.log('[User Message] Saving to MongoDB:', {
+            convId: activeConvId,
+            messageCount: messages.length,
+          });
+          saveConversation({
+            ...currentConv,
+            messages: messages,
+          });
+        }
+      }
+    }, 500);
   };
 
   const copyMessage = (message: UIMessage) => {
@@ -803,19 +867,27 @@ export function AssistantClient({ user }: AssistantClientProps) {
                 }} />
               ) : (
                 <div className="space-y-6">
-                  {messages.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      isEditing={editingMessageId === message.id}
-                      editContent={editContent}
-                      onEditChange={setEditContent}
-                      onSaveEdit={saveEdit}
-                      onCancelEdit={() => setEditingMessageId(null)}
-                      onCopy={() => copyMessage(message)}
-                      onEdit={() => startEdit(message.id)}
-                    />
-                  ))}
+                  {messages.map((message) => {
+                    // Add safety check for message structure
+                    if (!message || !message.id) {
+                      console.warn('[Message Render] Invalid message:', message);
+                      return null;
+                    }
+                    
+                    return (
+                      <MessageBubble
+                        key={message.id}
+                        message={message}
+                        isEditing={editingMessageId === message.id}
+                        editContent={editContent}
+                        onEditChange={setEditContent}
+                        onSaveEdit={saveEdit}
+                        onCancelEdit={() => setEditingMessageId(null)}
+                        onCopy={() => copyMessage(message)}
+                        onEdit={() => startEdit(message.id)}
+                      />
+                    );
+                  })}
                 </div>
               )}
 
