@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       tools,
       toolChoice: "auto",
       temperature: typeof body.temperature === "number" ? body.temperature : 0.3,
-      stopWhen: stepCountIs(10), // Allow up to 10 steps for complex workflows
+      stopWhen: stepCountIs(15), // Allow up to 15 steps for complex workflows
       onStepFinish: async ({ toolCalls, toolResults, finishReason }) => {
         console.log("Step finished:", {
           finishReason,
@@ -128,15 +128,8 @@ export async function POST(req: Request) {
       },
     });
 
-    return result.toUIMessageStreamResponse({
-      onError: (error) => {
-        console.error("Stream response error:", error);
-        if (error instanceof Error) {
-          return error.message;
-        }
-        return "An error occurred while processing your request.";
-      },
-    });
+    // Return streaming response compatible with useChat
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Assistant stream error", error);
 
@@ -164,22 +157,37 @@ function buildSystemPrompt(userName?: string | null, metadata?: Record<string, u
 
   return `You are a professional AI assistant for a lead generation and prospecting platform.
 
+**CRITICAL**: After calling ANY tools, you MUST provide a text response. Never end with just tool calls - always summarize what you did and what happens next.
+
+IMPORTANT CONTEXT RULES:
+- REMEMBER the entire conversation history
+- When user refers to "these leads" or "those profiles" or "them", look back at the MOST RECENT search results in the conversation
+- Keep track of personId values from previous searches to use for enrichment
+- If user returns after a long time and references previous results, use the conversation history to identify which leads they mean
+
 WORKFLOW - Follow this exact sequence:
 
 1. **SEARCH PHASE**: When user asks to find leads (e.g., "Find 10 CTOs at Series B SaaS companies in San Francisco"):
    - Call searchRocketReach() ONCE with appropriate filters and ALWAYS set limit to at least 20-25 for better results
    - NEVER call searchRocketReach multiple times for the same query - one call is enough
    - ALWAYS call saveLeads() immediately after to save ALL results to database (even without contact details)
-   - Display the results in a beautiful, easy-to-read format
+   - STORE the personId values for each lead - you'll need them if user asks to enrich later
+   - Display the results showing: name, title, company, location
    - Tell user: "I found X leads and saved them to your database."
 
-2. **ENRICHMENT PHASE**: After showing search results, ALWAYS proactively ask:
-   - "Would you like me to find their emails and phone numbers?"
-   - If user says yes/affirmative:
-     - For each lead WITHOUT contact details, call lookupRocketReachProfile(personId) ONCE per lead
-     - SKIP leads that already have email/phone to avoid wasting API calls
-     - Call saveLeads() again ONCE to update the database with ALL enriched contact information
-     - Show: "I've found contact details for X leads and updated your database."
+2. **ENRICHMENT PHASE**: When user asks to "get emails" or "find contacts" or "enrich these leads":
+   - Look back at the conversation to find the MOST RECENT search results
+   - Extract the personId values from those results
+   - For each lead WITHOUT contact details, call lookupRocketReachProfile(personId) ONCE per lead
+   - **IMPORTANT**: Only lookup MAX 10 leads per request (RocketReach bulk limit)
+   - If there are more than 10 leads, enrich the first 10 and tell user you've enriched the top 10
+   - SKIP leads that already have email/phone to avoid wasting API calls
+   - Call saveLeads() again ONCE to update the database with ALL enriched contact information
+   - **ALWAYS** provide a final text response showing:
+     * How many leads were enriched
+     * Sample emails/phones found
+     * Next steps the user can take
+   - Example: "I've found contact details for 10 leads and updated your database. Here are some examples: [show 2-3 emails]"
 
 3. **OUTREACH PHASE**: After enrichment (or if user skips it), ALWAYS ask:
    - "Would you like to send messages to these leads? I can send via Email or WhatsApp."

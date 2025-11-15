@@ -6,26 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Bot,
-  CheckCircle2,
-  ChevronDown,
+  ChevronLeft,
   ChevronRight,
-  Copy,
   DollarSign,
   Edit3,
   Loader2,
   MoreVertical,
   Plus,
   Send,
-  Sparkles,
-  TrendingUp,
-  Trash2,
-  User,
-  Users,
   Settings,
-  Zap,
+  Trash2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -33,14 +24,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, UIMessage } from "ai";
+import Link from "next/link";
+import { MessageBubble } from "@/components/assistant/message-bubble";
+import { EmptyState } from "@/components/assistant/empty-state";
+import { LoadingOverlay } from "@/components/assistant/loading-overlay";
 
 interface AssistantClientProps {
   user: {
@@ -108,7 +98,6 @@ const getThinkingSteps = (lastMessage?: UIMessage) => {
 };
 
 export function AssistantClient({ user }: AssistantClientProps) {
-  const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -122,8 +111,6 @@ export function AssistantClient({ user }: AssistantClientProps) {
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [usagePeriod, setUsagePeriod] = useState<"24h" | "7d" | "30d">("30d");
   const [loadingStats, setLoadingStats] = useState(false);
-  const [isConversationsOpen, setIsConversationsOpen] = useState(true);
-  const [isUsageStatsOpen, setIsUsageStatsOpen] = useState(true);
 
   // Local input state for the textarea
   const [localInput, setLocalInput] = useState("");
@@ -152,35 +139,24 @@ export function AssistantClient({ user }: AssistantClientProps) {
       console.log('[useChat] onFinish:', { message, messageCount: messages.length });
       
       if (activeConvId) {
-        setConversations((prev) =>
-          prev.map((c) => {
+        setConversations((prev) => {
+          const updated = prev.map((c) => {
             if (c.id === activeConvId) {
-              // Generate better title from first user message
-              let title = c.title;
-              if (c.title === "New chat") {
-                const currentMessages = [...messages, message];
-                const firstUserMsg = currentMessages.find((m) => m.role === "user");
-                if (firstUserMsg && firstUserMsg.parts && firstUserMsg.parts.length > 0) {
-                  const textContent = firstUserMsg.parts
-                    .filter((p) => p.type === "text")
-                    .map((p) => p.text)
-                    .join(" ")
-                    .trim();
-                  // Create smart title
-                  if (textContent.toLowerCase().includes("find") || textContent.toLowerCase().includes("search")) {
-                    title = "🔍 " + textContent.slice(0, 35) + (textContent.length > 35 ? "..." : "");
-                  } else if (textContent.toLowerCase().includes("email") || textContent.toLowerCase().includes("send")) {
-                    title = "✉️ " + textContent.slice(0, 35) + (textContent.length > 35 ? "..." : "");
-                  } else {
-                    title = textContent.slice(0, 40) + (textContent.length > 40 ? "..." : "");
-                  }
-                }
-              }
-              return { ...c, title, messages: [...messages, message] };
+              const updatedMessages = [...messages, message];
+              return { ...c, messages: updatedMessages };
             }
             return c;
-          })
-        );
+          });
+          
+          // Save to localStorage
+          try {
+            localStorage.setItem('assistant-conversations', JSON.stringify(updated));
+          } catch (e) {
+            console.error('Failed to save conversations:', e);
+          }
+          
+          return updated;
+        });
       }
       setThinkingSteps([]);
     },
@@ -388,16 +364,64 @@ export function AssistantClient({ user }: AssistantClientProps) {
     
     if (!localInput.trim() || isLoading) return;
 
+    const input = localInput.trim();
+
     // Create conversation if none exists
     if (!activeConvId) {
+      const lowerInput = input.toLowerCase();
+      
+      // Generate smart title based on keywords
+      let title = "";
+      if (lowerInput.includes("find") || lowerInput.includes("search") || lowerInput.includes("get")) {
+        title = "🔍 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+      } else if (lowerInput.includes("email") || lowerInput.includes("send") || lowerInput.includes("message")) {
+        title = "✉️ " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+      } else if (lowerInput.includes("ceo") || lowerInput.includes("founder") || lowerInput.includes("executive")) {
+        title = "👤 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+      } else {
+        title = input.slice(0, 35) + (input.length > 35 ? "..." : "");
+      }
+      
       const newConv: Conversation = {
         id: `conv-${Date.now()}`,
-        title: localInput.slice(0, 30) + (localInput.length > 30 ? "..." : ""),
+        title,
         messages: [],
         createdAt: Date.now(),
       };
       setConversations((prev) => [newConv, ...prev]);
       setActiveConvId(newConv.id);
+    } else {
+      // Update title if this is the first message in a "New chat"
+      const activeConv = conversations.find((c) => c.id === activeConvId);
+      if (activeConv && activeConv.title === "New chat" && messages.length === 0) {
+        const lowerInput = input.toLowerCase();
+        let newTitle = "";
+        
+        if (lowerInput.includes("find") || lowerInput.includes("search") || lowerInput.includes("get")) {
+          newTitle = "🔍 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+        } else if (lowerInput.includes("email") || lowerInput.includes("send") || lowerInput.includes("message")) {
+          newTitle = "✉️ " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+        } else if (lowerInput.includes("ceo") || lowerInput.includes("founder") || lowerInput.includes("executive")) {
+          newTitle = "👤 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+        } else {
+          newTitle = input.slice(0, 35) + (input.length > 35 ? "..." : "");
+        }
+        
+        setConversations((prev) => {
+          const updated = prev.map((c) => 
+            c.id === activeConvId ? { ...c, title: newTitle } : c
+          );
+          // Save to localStorage immediately
+          try {
+            localStorage.setItem('assistant-conversations', JSON.stringify(updated));
+          } catch (e) {
+            console.error('Failed to save conversations:', e);
+          }
+          return updated;
+        });
+        
+        console.log('[Title Updated]', { conversationId: activeConvId, newTitle });
+      }
     }
 
     sendMessage({ text: localInput });
@@ -443,116 +467,32 @@ export function AssistantClient({ user }: AssistantClientProps) {
 
   return (
     <div className="flex h-screen bg-white">
-      {/* Sidebar - ChatGPT style with toggle button */}
+      {/* Sidebar - Clean minimal design */}
       <div
         className={cn(
-          "flex flex-col border-r border-slate-200 bg-white shadow-sm transition-all duration-300 ease-in-out",
-          isSidebarExpanded ? "w-72" : "w-20"
+          "flex flex-col border-r border-slate-200 bg-white transition-all duration-300 ease-in-out",
+          isSidebarExpanded ? "w-64" : "w-16"
         )}
       >
         <div className="flex h-full flex-col">
-          {/* Header with toggle button */}
-          <div className="flex items-center justify-between p-3 border-b border-slate-200">
-            {isSidebarExpanded ? (
-              <h2 className="text-sm font-semibold text-slate-700">Conversations</h2>
-            ) : (
-              <div className="w-full" />
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-              className="h-8 w-8 shrink-0 hover:bg-amber-50"
-            >
-              {isSidebarExpanded ? (
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                </svg>
-              ) : (
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
-              )}
-            </Button>
-          </div>
           {/* New Chat Button */}
           <div className="p-3 border-b border-slate-200">
             <Button
               onClick={createNewConversation}
               size="sm"
               className={cn(
-                "w-full gap-3 bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 hover:border-amber-300 transition-all",
-                isSidebarExpanded ? "justify-start" : "justify-center px-0"
+                "w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white transition-all",
+                isSidebarExpanded ? "justify-start px-3" : "justify-center px-2"
               )}
             >
               <Plus className="h-4 w-4 shrink-0" />
-              {isSidebarExpanded && <span className="text-sm">New chat</span>}
+              {isSidebarExpanded && <span className="text-sm font-medium">New Chat</span>}
             </Button>
           </div>
 
-          {/* Navigation Items */}
-          <div className="px-3 py-2 border-b border-slate-200 space-y-1">
-            <button
-              onClick={() => router.push("/leads")}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
-                "hover:bg-amber-50 text-slate-700 hover:text-amber-900",
-                !isSidebarExpanded && "justify-center px-0"
-              )}
-            >
-              <Users className="h-4 w-4 shrink-0" />
-              {isSidebarExpanded && <span>All Leads</span>}
-            </button>
-            <button
-              onClick={() => router.push("/leads/lists")}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
-                "hover:bg-amber-50 text-slate-700 hover:text-amber-900",
-                !isSidebarExpanded && "justify-center px-0"
-              )}
-            >
-              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              {isSidebarExpanded && <span>Lead Lists</span>}
-            </button>
-            <button
-              onClick={() => router.push("/email/campaigns")}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
-                "hover:bg-amber-50 text-slate-700 hover:text-amber-900",
-                !isSidebarExpanded && "justify-center px-0"
-              )}
-            >
-              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              {isSidebarExpanded && <span>Email Campaigns</span>}
-            </button>
-          </div>
-
-          {/* Conversations List - Collapsible with ScrollArea */}
-          <Collapsible
-            open={isConversationsOpen}
-            onOpenChange={setIsConversationsOpen}
-            className="flex-1 flex flex-col min-h-0"
-          >
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center justify-between px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg mx-3 mb-2">
-                {isSidebarExpanded && <span>Recent Chats</span>}
-                {isSidebarExpanded ? (
-                  isConversationsOpen ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )
-                ) : (
-                  <div className="h-2 w-2 rounded-full bg-amber-500" />
-                )}
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="flex-1 min-h-0">
-              <ScrollArea className="h-full px-3">
+          {/* Conversations List - Always visible, no collapsible */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ScrollArea className="h-full px-3 py-2">
                 <div className="space-y-1.5 pb-2">
                   {conversations.map((conv) => (
               <div
@@ -674,154 +614,100 @@ export function AssistantClient({ user }: AssistantClientProps) {
               </div>
             ))}
                 </div>
-              </ScrollArea>
-            </CollapsibleContent>
-          </Collapsible>
+            </ScrollArea>
+          </div>
 
-          {/* AI Usage Stats Section - Collapsible */}
+          {/* AI Usage Stats - Minimal compact version */}
           {isSidebarExpanded && usageStats && (
-            <Collapsible
-              open={isUsageStatsOpen}
-              onOpenChange={setIsUsageStatsOpen}
-              className="border-t border-slate-200"
-            >
-              <div className="px-3 py-2">
-                <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center justify-between p-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-amber-600" />
-                      <span>AI Usage</span>
-                    </div>
-                    {isUsageStatsOpen ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </button>
-                </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent>
-                <div className="px-3 pb-3">
-                  <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-lg p-3 border border-amber-200/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <select
-                        value={usagePeriod}
-                        onChange={(e) => setUsagePeriod(e.target.value as "24h" | "7d" | "30d")}
-                        className="text-xs border border-amber-200 rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
-                      >
-                        <option value="24h">24h</option>
-                        <option value="7d">7d</option>
-                        <option value="30d">30d</option>
-                      </select>
-                    </div>
-                
+            <div className="border-t border-slate-200 p-3">
+              <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-lg p-2.5 border border-amber-200/50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <DollarSign className="h-3.5 w-3.5 text-amber-600" />
+                    <span className="text-xs font-medium text-slate-700">AI Usage</span>
+                  </div>
+                  <select
+                    value={usagePeriod}
+                    onChange={(e) => setUsagePeriod(e.target.value as "24h" | "7d" | "30d")}
+                    className="text-xs border border-amber-200 rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+                  >
+                    <option value="24h">24h</option>
+                    <option value="7d">7d</option>
+                    <option value="30d">30d</option>
+                  </select>
+                </div>
                 {loadingStats ? (
                   <div className="flex items-center justify-center py-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                    <Loader2 className="h-3 w-3 animate-spin text-amber-500" />
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold text-amber-900">
-                        ${usageStats.estimatedCost}
-                      </span>
-                      <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                        Est. cost
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white/60 rounded p-2">
-                        <div className="flex items-center gap-1 text-slate-600 mb-1">
-                          <Zap className="h-3 w-3" />
-                          <span>Tokens</span>
-                        </div>
-                        <div className="font-semibold text-slate-900">
-                          {usageStats.totalTokens.toLocaleString()}
-                        </div>
-                      </div>
-                      
-                      <div className="bg-white/60 rounded p-2">
-                        <div className="flex items-center gap-1 text-slate-600 mb-1">
-                          <TrendingUp className="h-3 w-3" />
-                          <span>Calls</span>
-                        </div>
-                        <div className="font-semibold text-slate-900">
-                          {usageStats.totalCalls}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="text-xs text-amber-700 pt-1 border-t border-amber-200">
-                      <div className="flex justify-between">
-                        <span>Avg/call:</span>
-                        <span className="font-medium">${usageStats.costPerCall}</span>
-                      </div>
-                      <div className="flex justify-between mt-0.5">
-                        <span>Success rate:</span>
-                        <span className="font-medium">
-                          {usageStats.totalCalls > 0
-                            ? Math.round((usageStats.successCalls / usageStats.totalCalls) * 100)
-                            : 0}%
-                        </span>
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-amber-900">
+                      ${usageStats.estimatedCost}
+                    </span>
+                    <span className="text-xs text-slate-600">
+                      {usageStats.totalCalls} calls
+                    </span>
                   </div>
                 )}
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+              </div>
+            </div>
           )}
 
-          {/* Bottom Section - Settings and User */}
+          {/* Bottom Section - User and Expand Button */}
           <div className="border-t border-slate-200">
-            <div className="px-3 py-2 space-y-1">
-              <button
-                onClick={() => router.push("/dashboard")}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
-                  "hover:bg-amber-50 text-slate-700 hover:text-amber-900",
-                  !isSidebarExpanded && "justify-center px-0"
-                )}
-              >
-                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-                {isSidebarExpanded && <span>Dashboard</span>}
-              </button>
-              <button
-                onClick={() => router.push("/settings")}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
-                  "hover:bg-amber-50 text-slate-700 hover:text-amber-900",
-                  !isSidebarExpanded && "justify-center px-0"
-                )}
-              >
-                <Settings className="h-4 w-4 shrink-0" />
-                {isSidebarExpanded && <span>Settings</span>}
-              </button>
-            </div>
-            
             {/* User Info */}
             {user.name && (
-              <div className="border-t border-slate-200 p-3">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8 shrink-0">
+              <div className="p-3 flex items-center justify-between gap-2">
+                {isSidebarExpanded ? (
+                  <>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <Avatar className="h-8 w-8 shrink-0">
+                        {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
+                        <AvatarFallback className="bg-amber-100 text-amber-700 text-sm">
+                          {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-slate-700 truncate">{user.name}</p>
+                      </div>
+                      <Link
+                        href="/settings"
+                        className="shrink-0 p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        <Settings className="h-4 w-4 text-slate-500" />
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <Avatar className="h-8 w-8 mx-auto">
                     {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
-                    <AvatarFallback className="bg-amber-100 text-amber-700">
+                    <AvatarFallback className="bg-amber-100 text-amber-700 text-sm">
                       {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  {isSidebarExpanded && (
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{user.name}</p>
-                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             )}
+            
+            {/* Expand/Collapse Button at Bottom */}
+            <div className="border-t border-slate-200 p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                className="w-full hover:bg-slate-100 text-slate-600"
+              >
+                {isSidebarExpanded ? (
+                  <>
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Collapse</span>
+                  </>
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -858,62 +744,7 @@ export function AssistantClient({ user }: AssistantClientProps) {
                 </div>
               )}
 
-              {/* Big Transparent Loading Overlay - Only show when loading */}
-              {isLoading && (
-                <div className="fixed inset-0 bg-black/5 backdrop-blur-sm flex items-center justify-center z-50">
-                  <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-8 max-w-md mx-4 border border-amber-200/50">
-                    <div className="flex flex-col items-center gap-6">
-                      {/* Animated spinner */}
-                      <div className="relative w-20 h-20">
-                        <div className="absolute inset-0 border-4 border-amber-200 rounded-full"></div>
-                        <div className="absolute inset-0 border-4 border-amber-500 rounded-full border-t-transparent animate-spin"></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Sparkles className="h-8 w-8 text-amber-500 animate-pulse" />
-                        </div>
-                      </div>
-                      
-                      {/* Thinking steps */}
-                      <div className="w-full space-y-3">
-                        {thinkingSteps.map((step, idx) => (
-                          <div key={idx} className="flex items-center gap-3 text-sm">
-                            <div className={cn(
-                              "w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300",
-                              step.status === "complete" && "bg-green-500",
-                              step.status === "active" && "bg-amber-500 animate-pulse",
-                              step.status === "pending" && "bg-slate-200"
-                            )}>
-                              {step.status === "complete" && (
-                                <CheckCircle2 className="h-3 w-3 text-white" />
-                              )}
-                              {step.status === "active" && (
-                                <Loader2 className="h-3 w-3 text-white animate-spin" />
-                              )}
-                            </div>
-                            <span className={cn(
-                              "font-medium transition-colors",
-                              step.status === "complete" && "text-green-700",
-                              step.status === "active" && "text-amber-900",
-                              step.status === "pending" && "text-slate-400"
-                            )}>
-                              {step.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {/* Stop button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={stop}
-                        className="mt-2 border-amber-300 hover:bg-amber-50"
-                      >
-                        Stop generating
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <LoadingOverlay isLoading={isLoading} thinkingSteps={thinkingSteps} onStop={stop} />
 
               {/* Error State */}
               {error && (
@@ -984,256 +815,6 @@ export function AssistantClient({ user }: AssistantClientProps) {
             </p>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-interface MessageBubbleProps {
-  message: UIMessage;
-  isEditing: boolean;
-  editContent: string;
-  onEditChange: (val: string) => void;
-  onSaveEdit: () => void;
-  onCancelEdit: () => void;
-  onCopy: (message: UIMessage) => void;
-  onEdit: () => void;
-}
-
-function MessageBubble({
-  message,
-  isEditing,
-  editContent,
-  onEditChange,
-  onSaveEdit,
-  onCancelEdit,
-  onCopy,
-  onEdit,
-}: MessageBubbleProps) {
-  const isUser = message.role === "user";
-
-  if (isEditing && isUser) {
-    return (
-      <div className="flex justify-end">
-        <div className="max-w-[80%]">
-          <Textarea
-            value={editContent}
-            onChange={(e) => onEditChange(e.target.value)}
-            className="mb-2 w-full rounded-lg border border-slate-300 focus:border-amber-400"
-            rows={3}
-          />
-          <div className="flex gap-2 justify-end">
-            <Button size="sm" onClick={onSaveEdit} className="bg-amber-500 hover:bg-amber-600 text-white">
-              Save
-            </Button>
-            <Button size="sm" variant="outline" onClick={onCancelEdit} className="border-slate-300">
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={cn(
-      "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
-      isUser ? "justify-end" : "justify-start"
-    )}>
-      <div className={cn(
-        "max-w-[80%] rounded-2xl px-4 py-3 shadow-sm",
-        isUser 
-          ? "bg-amber-500 text-white ml-auto" 
-          : "bg-white border border-slate-200 text-slate-900"
-      )}>
-        <div className={cn(
-          "text-sm leading-relaxed",
-          isUser ? "text-white" : "text-slate-900"
-        )}>
-          {!message.parts || message.parts.length === 0 ? (
-            <div className="text-slate-400 italic">No content</div>
-          ) : (
-            message.parts.map((part, index) => {
-              
-              if (part.type === "text") {
-                // Clean up the text to remove RocketReach mentions and format nicely
-                let cleanText = part.text
-                  .replace(/RocketReach/gi, "our database")
-                  .replace(/rocket reach/gi, "our database");
-                
-                // Parse markdown-style formatting
-                const lines = cleanText.split('\n');
-                return (
-                  <div key={index} className="space-y-2">
-                    {lines.map((line, lineIdx) => {
-                      // Bold text
-                      if (line.includes('**')) {
-                        const parts = line.split('**');
-                        return (
-                          <p key={lineIdx}>
-                            {parts.map((p, i) => 
-                              i % 2 === 1 ? <strong key={i} className="font-semibold text-slate-900">{p}</strong> : <span key={i}>{p}</span>
-                            )}
-                          </p>
-                        );
-                      }
-                      // List items
-                      if (line.trim().startsWith('-') || line.trim().startsWith('•')) {
-                        return (
-                          <li key={lineIdx} className="ml-4">
-                            {line.replace(/^[-•]\s*/, '')}
-                          </li>
-                        );
-                      }
-                      // Regular text
-                      return line.trim() ? <p key={lineIdx}>{line}</p> : <br key={lineIdx} />;
-                    })}
-                  </div>
-                );
-              }
-              
-              // Handle tool calls - show beautiful results
-              if (part.type.startsWith("tool-")) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const toolPart = part as any;
-                
-                // For search results, show beautiful lead cards
-                if (toolPart.toolName === "searchRocketReach" && toolPart.output?.leads) {
-                  return (
-                    <div key={index} className="mt-3 space-y-2">
-                      <div className="text-sm font-medium text-slate-700 mb-2">
-                        Found {toolPart.output.leads.length} lead(s):
-                      </div>
-                      {toolPart.output.leads.slice(0, 5).map((lead: any, idx: number) => (
-                        <div key={idx} className="p-3 rounded-lg border border-slate-200 bg-white hover:shadow-sm transition-shadow">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-white font-semibold">
-                              {lead.fullName?.charAt(0) || lead.firstName?.charAt(0) || '?'}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-slate-900">{lead.fullName || 'Unknown'}</h4>
-                              <p className="text-sm text-slate-600">{lead.title || 'No title'}</p>
-                              {lead.company && <p className="text-sm text-slate-500">{lead.company}</p>}
-                              <div className="flex items-center gap-2 mt-1">
-                                {lead.location && (
-                                  <span className="text-xs text-slate-400">📍 {lead.location}</span>
-                                )}
-                                {lead.linkedinUrl && (
-                                  <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
-                                    LinkedIn →
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {toolPart.output.leads.length > 5 && (
-                        <p className="text-xs text-slate-500 italic">
-                          ...and {toolPart.output.leads.length - 5} more
-                        </p>
-                      )}
-                    </div>
-                  );
-                }
-                
-                // For enriched data, show contact details
-                if (toolPart.toolName === "lookupRocketReachProfile" && toolPart.output?.lead) {
-                  const lead = toolPart.output.lead;
-                  return (
-                    <div key={index} className="mt-3 p-4 rounded-lg border border-green-200 bg-green-50/50">
-                      <div className="text-sm font-medium text-green-900 mb-3 flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Contact details found
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        {lead.email && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-500">Email:</span>
-                            <span className="font-medium text-slate-900">{lead.email}</span>
-                          </div>
-                        )}
-                        {lead.phone && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-500">Phone:</span>
-                            <span className="font-medium text-slate-900">{lead.phone}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-                
-                // For saveLeads, show success message
-                if (toolPart.toolName === "saveLeads" && toolPart.output?.saved) {
-                  return (
-                    <div key={index} className="mt-3 p-3 rounded-lg border border-blue-200 bg-blue-50/50 text-sm">
-                      <div className="flex items-center gap-2 text-blue-900">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>Saved {toolPart.output.saved} lead(s) to your database</span>
-                      </div>
-                    </div>
-                  );
-                }
-                
-                // Default tool display
-                return null;
-              }
-              
-              return null;
-            })
-          )}
-        </div>
-        
-        {/* Action Buttons */}
-        {!isUser && (
-          <div className="mt-2 flex gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onCopy(message)}
-              className="h-7 px-2 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-            >
-              <Copy className="h-3 w-3 mr-1" />
-              Copy
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({ onExampleClick }: { onExampleClick: (text: string) => void }) {
-  const examples = [
-    "Find 10 CTOs at Series B SaaS companies in San Francisco",
-    "Lookup the contact details for john@acme.com",
-    "Search for VPs of Marketing in fintech startups",
-    "Draft a cold email to a Head of Sales",
-  ];
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 shadow-lg">
-        <Sparkles className="h-8 w-8 text-white" />
-      </div>
-
-      <h2 className="mb-2 text-3xl font-semibold text-slate-900">How can I help you today?</h2>
-
-      <p className="mb-8 max-w-md text-slate-600">
-        Ask me anything about finding leads, looking up contacts, or drafting outreach.
-      </p>
-
-      <div className="w-full max-w-2xl space-y-2">
-        {examples.map((example, idx) => (
-          <button
-            key={idx}
-            onClick={() => onExampleClick(example)}
-            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 shadow-sm hover:border-amber-300 hover:bg-amber-50/50 transition-colors"
-          >
-            {example}
-          </button>
-        ))}
       </div>
     </div>
   );
