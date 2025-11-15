@@ -46,6 +46,11 @@ interface Conversation {
   title: string;
   messages: UIMessage[];
   createdAt: number;
+  metadata?: {
+    totalTokens?: number;
+    totalCost?: number;
+    toolsUsed?: string[];
+  };
 }
 
 interface ThinkingStep {
@@ -143,17 +148,15 @@ export function AssistantClient({ user }: AssistantClientProps) {
           const updated = prev.map((c) => {
             if (c.id === activeConvId) {
               const updatedMessages = [...messages, message];
-              return { ...c, messages: updatedMessages };
+              const updatedConv = { ...c, messages: updatedMessages };
+              
+              // Save to MongoDB asynchronously
+              saveConversation(updatedConv);
+              
+              return updatedConv;
             }
             return c;
           });
-          
-          // Save to localStorage
-          try {
-            localStorage.setItem('assistant-conversations', JSON.stringify(updated));
-          } catch (e) {
-            console.error('Failed to save conversations:', e);
-          }
           
           return updated;
         });
@@ -252,39 +255,13 @@ export function AssistantClient({ user }: AssistantClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
-  // Load conversations from localStorage
+  // Load conversations from MongoDB on mount
   useEffect(() => {
-    const saved = localStorage.getItem("assistant-conversations");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Migrate old message format to new UIMessage format
-        const migrated = parsed.map((conv: Conversation) => ({
-          ...conv,
-          messages: conv.messages.map((msg: UIMessage) => ({
-            ...msg,
-            parts: msg.parts || [], // Ensure parts array exists
-          })),
-        }));
-        setConversations(migrated);
-        if (migrated.length > 0 && !activeConvId) {
-          setActiveConvId(migrated[0].id);
-        }
-      } catch (error) {
-        console.error("Error loading conversations:", error);
-        // Clear corrupted data
-        localStorage.removeItem("assistant-conversations");
-      }
-    }
+    fetchConversations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Save conversations to localStorage
-  useEffect(() => {
-    if (conversations.length > 0) {
-      localStorage.setItem("assistant-conversations", JSON.stringify(conversations));
-    }
-  }, [conversations]);
+  // Conversations are now auto-saved to MongoDB via API calls
 
   // Fetch usage stats
   const fetchUsageStats = async (period: string) => {
@@ -302,35 +279,96 @@ export function AssistantClient({ user }: AssistantClientProps) {
     }
   };
 
+  // Fetch conversations from MongoDB
+  const fetchConversations = async () => {
+    try {
+      const res = await fetch('/api/assistant/conversations');
+      if (res.ok) {
+        const data = await res.json();
+        setConversations(data);
+        if (data.length > 0 && !activeConvId) {
+          setActiveConvId(data[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    }
+  };
+
+  // Save conversation to MongoDB
+  const saveConversation = async (conversation: Conversation) => {
+    try {
+      await fetch('/api/assistant/conversations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: conversation.id,
+          title: conversation.title,
+          messages: conversation.messages,
+          metadata: conversation.metadata,
+        }),
+      });
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
+  };
+
   // Load usage stats on mount and when period changes
   useEffect(() => {
     fetchUsageStats(usagePeriod);
   }, [usagePeriod]);
 
-  const createNewConversation = () => {
+  const createNewConversation = async () => {
     const newConv: Conversation = {
       id: `conv-${Date.now()}`,
       title: "New chat",
       messages: [],
       createdAt: Date.now(),
     };
-    setConversations((prev) => [newConv, ...prev]);
-    setActiveConvId(newConv.id);
-    setLocalInput("");
-    setMessages([]);
+    
+    // Save to MongoDB
+    try {
+      await fetch('/api/assistant/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newConv),
+      });
+      
+      setConversations((prev) => [newConv, ...prev]);
+      setActiveConvId(newConv.id);
+      setLocalInput("");
+      setMessages([]);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast.error('Failed to create new chat');
+    }
   };
 
-  const deleteConversation = (id: string) => {
+  const deleteConversation = async (id: string) => {
     if (!confirm("Are you sure you want to delete this conversation?")) {
       return;
     }
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    if (activeConvId === id) {
-      const remaining = conversations.filter((c) => c.id !== id);
-      setActiveConvId(remaining[0]?.id || null);
-      setMessages([]);
+    
+    try {
+      const res = await fetch(`/api/assistant/conversations?id=${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (res.ok) {
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+        if (activeConvId === id) {
+          const remaining = conversations.filter((c) => c.id !== id);
+          setActiveConvId(remaining[0]?.id || null);
+          setMessages([]);
+        }
+        toast.success("Conversation deleted");
+      } else {
+        toast.error('Failed to delete conversation');
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast.error('Failed to delete conversation');
     }
-    toast.success("Conversation deleted");
   };
 
   const startRenameConversation = (id: string) => {
@@ -341,15 +379,30 @@ export function AssistantClient({ user }: AssistantClientProps) {
     }
   };
 
-  const saveRenameConversation = () => {
+  const saveRenameConversation = async () => {
     if (!renamingConvId || !renameValue.trim()) {
       setRenamingConvId(null);
       return;
     }
-    setConversations((prev) =>
-      prev.map((c) => (c.id === renamingConvId ? { ...c, title: renameValue.trim() } : c))
-    );
-    setRenamingConvId(null);
+    
+    try {
+      await fetch('/api/assistant/conversations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: renamingConvId,
+          title: renameValue.trim(),
+        }),
+      });
+      
+      setConversations((prev) =>
+        prev.map((c) => (c.id === renamingConvId ? { ...c, title: renameValue.trim() } : c))
+      );
+      setRenamingConvId(null);
+    } catch (error) {
+      console.error('Error renaming conversation:', error);
+      toast.error('Failed to rename conversation');
+    }
     setRenameValue("");
     toast.success("Conversation renamed");
   };
@@ -359,7 +412,7 @@ export function AssistantClient({ user }: AssistantClientProps) {
     setRenameValue("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!localInput.trim() || isLoading) return;
@@ -388,8 +441,22 @@ export function AssistantClient({ user }: AssistantClientProps) {
         messages: [],
         createdAt: Date.now(),
       };
-      setConversations((prev) => [newConv, ...prev]);
-      setActiveConvId(newConv.id);
+      
+      // Save to MongoDB
+      try {
+        await fetch('/api/assistant/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newConv),
+        });
+        
+        setConversations((prev) => [newConv, ...prev]);
+        setActiveConvId(newConv.id);
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        toast.error('Failed to create conversation');
+        return;
+      }
     } else {
       // Update title if this is the first message in a "New chat"
       const activeConv = conversations.find((c) => c.id === activeConvId);
@@ -407,20 +474,28 @@ export function AssistantClient({ user }: AssistantClientProps) {
           newTitle = input.slice(0, 35) + (input.length > 35 ? "..." : "");
         }
         
-        setConversations((prev) => {
-          const updated = prev.map((c) => 
-            c.id === activeConvId ? { ...c, title: newTitle } : c
-          );
-          // Save to localStorage immediately
-          try {
-            localStorage.setItem('assistant-conversations', JSON.stringify(updated));
-          } catch (e) {
-            console.error('Failed to save conversations:', e);
-          }
-          return updated;
-        });
-        
-        console.log('[Title Updated]', { conversationId: activeConvId, newTitle });
+        // Save to MongoDB immediately
+        try {
+          await fetch('/api/assistant/conversations', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: activeConvId,
+              title: newTitle,
+            }),
+          });
+          
+          setConversations((prev) => {
+            const updated = prev.map((c) => 
+              c.id === activeConvId ? { ...c, title: newTitle } : c
+            );
+            return updated;
+          });
+          
+          console.log('[Title Updated]', { conversationId: activeConvId, newTitle });
+        } catch (error) {
+          console.error('Error updating title:', error);
+        }
       }
     }
 
