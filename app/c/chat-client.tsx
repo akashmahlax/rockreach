@@ -217,9 +217,9 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   // Load messages when switching conversations - fetch from MongoDB
   useEffect(() => {
     const loadConversationMessages = async () => {
-      if (activeConvId && activeConv) {
+      if (activeConvId) {
         console.log('[Conversation Switch] Fetching messages from MongoDB:', {
-          convId: activeConv.id,
+          convId: activeConvId,
         });
         
         try {
@@ -229,19 +229,34 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
             const fullConversation = await res.json();
             console.log('[Conversation Switch] Loaded from DB:', {
               messageCount: fullConversation.messages?.length || 0,
+              title: fullConversation.title,
             });
             setMessages(fullConversation.messages || []);
+            
+            // Update conversations list if this conversation isn't in it yet
+            setConversations((prev) => {
+              const exists = prev.find(c => c.id === activeConvId);
+              if (!exists) {
+                return [fullConversation, ...prev];
+              }
+              return prev.map(c => c.id === activeConvId ? fullConversation : c);
+            });
           } else {
             // Fallback to cached data if API fails
-            console.warn('[Conversation Switch] API failed, using cached data');
-            setMessages(activeConv.messages || []);
+            console.warn('[Conversation Switch] API failed');
+            if (activeConv) {
+              setMessages(activeConv.messages || []);
+            }
           }
         } catch (error) {
           console.error('[Conversation Switch] Error loading messages:', error);
           // Fallback to cached data
-          setMessages(activeConv.messages || []);
+          if (activeConv) {
+            setMessages(activeConv.messages || []);
+          }
         }
-      } else if (!activeConvId) {
+      } else {
+        // No active conversation - clear messages
         setMessages([]);
       }
     };
@@ -272,8 +287,13 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
 
   // Sync conversationId prop with activeConvId state when URL changes
   useEffect(() => {
+    console.log('[URL Change] conversationId prop changed:', conversationId);
     if (conversationId !== activeConvId) {
       setActiveConvId(conversationId);
+      // Clear messages to show loading state
+      if (conversationId) {
+        setMessages([]);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
@@ -377,10 +397,13 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   }, [usagePeriod]);
 
   const createNewConversation = async () => {
+    // Clear messages and active conversation first
+    setMessages([]);
+    setActiveConvId(null);
+    setLocalInput("");
+    
     // Always navigate to /c/new which will create a fresh chat
     router.push('/c/new');
-    setMessages([]);
-    setLocalInput("");
   };
 
   const deleteConversation = async (id: string) => {
@@ -468,9 +491,10 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     if (!localInput.trim() || isLoading) return;
 
     const input = localInput.trim();
+    let currentConvId = activeConvId;
 
     // Create conversation if none exists
-    if (!activeConvId) {
+    if (!currentConvId) {
       const lowerInput = input.toLowerCase();
       
       // Generate smart title based on keywords
@@ -509,61 +533,68 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
         
         const createdConv = { ...newConv, id: mongoId };
         
+        console.log('[New Conversation Created]', { mongoId, title: createdConv.title });
+        
+        // Update ALL state synchronously BEFORE sending message
         setConversations((prev) => [createdConv, ...prev]);
         setActiveConvId(mongoId);
         
-        // Navigate to the new conversation URL with MongoDB ID
-        router.replace(`/c/${mongoId}`, { scroll: false });
+        // Navigate to the new conversation URL with MongoDB ID immediately
+        router.push(`/c/${mongoId}`);
         
-        console.log('[New Conversation Created]', { mongoId });
+        // Send the message AFTER the context has switched
+        sendMessage({ text: input });
+        setLocalInput("");
+        return; // Exit early
+
       } catch (error) {
         console.error('Error creating conversation:', error);
         toast.error('Failed to create conversation');
         return;
       }
-    } else {
-      // Update title if this is the first message in a "New chat"
-      const activeConv = conversations.find((c) => c.id === activeConvId);
-      if (activeConv && activeConv.title === "New chat" && messages.length === 0) {
-        const lowerInput = input.toLowerCase();
-        let newTitle = "";
+    }
+    
+    // This part runs for existing conversations
+    const activeConv = conversations.find((c) => c.id === activeConvId);
+    if (activeConv && activeConv.title === "New chat" && messages.length === 0) {
+      const lowerInput = input.toLowerCase();
+      let newTitle = "";
+      
+      if (lowerInput.includes("find") || lowerInput.includes("search") || lowerInput.includes("get")) {
+        newTitle = "🔍 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+      } else if (lowerInput.includes("email") || lowerInput.includes("send") || lowerInput.includes("message")) {
+        newTitle = "✉️ " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+      } else if (lowerInput.includes("ceo") || lowerInput.includes("founder") || lowerInput.includes("executive")) {
+        newTitle = "👤 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+      } else {
+        newTitle = input.slice(0, 35) + (input.length > 35 ? "..." : "");
+      }
+      
+      // Save to MongoDB immediately
+      try {
+        await fetch('/api/assistant/conversations', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: activeConvId,
+            title: newTitle,
+          }),
+        });
         
-        if (lowerInput.includes("find") || lowerInput.includes("search") || lowerInput.includes("get")) {
-          newTitle = "🔍 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-        } else if (lowerInput.includes("email") || lowerInput.includes("send") || lowerInput.includes("message")) {
-          newTitle = "✉️ " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-        } else if (lowerInput.includes("ceo") || lowerInput.includes("founder") || lowerInput.includes("executive")) {
-          newTitle = "👤 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-        } else {
-          newTitle = input.slice(0, 35) + (input.length > 35 ? "..." : "");
-        }
+        setConversations((prev) => {
+          const updated = prev.map((c) => 
+            c.id === activeConvId ? { ...c, title: newTitle } : c
+          );
+          return updated;
+        });
         
-        // Save to MongoDB immediately
-        try {
-          await fetch('/api/assistant/conversations', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: activeConvId,
-              title: newTitle,
-            }),
-          });
-          
-          setConversations((prev) => {
-            const updated = prev.map((c) => 
-              c.id === activeConvId ? { ...c, title: newTitle } : c
-            );
-            return updated;
-          });
-          
-          console.log('[Title Updated]', { conversationId: activeConvId, newTitle });
-        } catch (error) {
-          console.error('Error updating title:', error);
-        }
+        console.log('[Title Updated]', { conversationId: activeConvId, newTitle });
+      } catch (error) {
+        console.error('Error updating title:', error);
       }
     }
 
-    // Send the message
+    // Send the message for existing conversations
     sendMessage({ text: localInput });
     setLocalInput("");
     
@@ -691,7 +722,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                       onClick={() => router.push(`/c/${conv.id}`)}
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors min-w-0",
-                        activeConvId === conv.id ? "text-amber-900 font-medium" : "text-slate-700"
+                        activeConvId === conv.id ? "text-amber-900 font-normal" : "text-slate-700"
                       )}
                     >
                       {!isSidebarExpanded ? (
@@ -711,19 +742,19 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                       )}
                     </button>
                     {isSidebarExpanded && (
-                      <div className="absolute top-1 right-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                      <div className="absolute top-1 right-1 opacity-30 group-hover/item:opacity-100 transition-opacity">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-slate-500 hover:text-slate-900 bg-white/80 backdrop-blur-sm hover:bg-white"
+                              className="h-7 w-7 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                               }}
                             >
-                              <MoreVertical className="h-3 w-3" />
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
@@ -785,7 +816,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-amber-900">
+                    <span className="text-base font-semibold text-amber-900">
                       ${usageStats.estimatedCost}
                     </span>
                     <span className="text-xs text-slate-600">
@@ -812,7 +843,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-slate-700 truncate">{user.name}</p>
+                        <p className="text-sm font-normal text-slate-700 truncate">{user.name}</p>
                       </div>
                       <Link
                         href="/settings"

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import { streamText, convertToModelMessages, UIMessage } from "ai";
+import { streamText, convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { logApiUsage } from "@/models/ApiUsage";
 import { createAssistantTools } from "@/lib/assistant/tools";
 import { getDefaultModel } from "@/lib/ai-provider";
@@ -56,6 +56,7 @@ export async function POST(req: Request) {
       system: systemPrompt,
       messages: convertToModelMessages(body.messages),
       tools,
+      stopWhen: stepCountIs(5), // Enable multi-step: continue for up to 5 steps after tool calls
       // By default, tools will execute and continue - no maxSteps needed
       onStepFinish: async ({ toolCalls, toolResults, finishReason, text }) => {
         console.log("Step finished:", {

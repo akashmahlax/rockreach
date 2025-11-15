@@ -89,7 +89,7 @@ export function MessageBubble({
                         return (
                           <p key={lineIdx}>
                             {parts.map((p, i) => 
-                              i % 2 === 1 ? <strong key={i} className="font-semibold text-slate-900">{p}</strong> : <span key={i}>{p}</span>
+                              i % 2 === 1 ? <strong key={i} className="font-medium">{p}</strong> : <span key={i}>{p}</span>
                             )}
                           </p>
                         );
@@ -118,17 +118,17 @@ export function MessageBubble({
                 if (toolPart.toolName === "searchRocketReach" && toolPart.output?.leads) {
                   return (
                     <div key={index} className="mt-3 space-y-2">
-                      <div className="text-sm font-medium text-slate-700 mb-2">
+                      <div className="text-sm font-normal text-slate-700 mb-2">
                         Found {toolPart.output.leads.length} lead(s):
                       </div>
                       {toolPart.output.leads.slice(0, 5).map((lead: any, idx: number) => (
                         <div key={idx} className="p-3 rounded-lg border border-slate-200 bg-white hover:shadow-sm transition-shadow">
                           <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-white font-semibold">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-white font-medium">
                               {lead.fullName?.charAt(0) || lead.firstName?.charAt(0) || '?'}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-slate-900">{lead.fullName || 'Unknown'}</h4>
+                              <h4 className="font-medium text-slate-900">{lead.fullName || 'Unknown'}</h4>
                               <p className="text-sm text-slate-600">{lead.title || 'No title'}</p>
                               {lead.company && <p className="text-sm text-slate-500">{lead.company}</p>}
                               <div className="flex items-center gap-2 mt-1">
@@ -159,7 +159,7 @@ export function MessageBubble({
                   const lead = toolPart.output.lead;
                   return (
                     <div key={index} className="mt-3 p-4 rounded-lg border border-green-200 bg-green-50/50">
-                      <div className="text-sm font-medium text-green-900 mb-3 flex items-center gap-2">
+                      <div className="text-sm font-normal text-green-900 mb-3 flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4" />
                         Contact details found
                       </div>
@@ -167,13 +167,13 @@ export function MessageBubble({
                         {lead.email && (
                           <div className="flex items-center gap-2">
                             <span className="text-slate-500">Email:</span>
-                            <span className="font-medium text-slate-900">{lead.email}</span>
+                            <span className="font-normal text-slate-900">{lead.email}</span>
                           </div>
                         )}
                         {lead.phone && (
                           <div className="flex items-center gap-2">
                             <span className="text-slate-500">Phone:</span>
-                            <span className="font-medium text-slate-900">{lead.phone}</span>
+                            <span className="font-normal text-slate-900">{lead.phone}</span>
                           </div>
                         )}
                       </div>
