@@ -65,4 +65,5 @@ export const Collections = {
   AGENT_TASKS: 'agent_tasks',
   EMAIL_CAMPAIGNS: 'email_campaigns',
   EMAIL_TRACKING: 'email_tracking',
+  CONVERSATIONS: 'conversations',
 } as const

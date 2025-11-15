@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 export interface ApiUsage {
   _id?: ObjectId;
   orgId: string;
+  userId?: string;
   provider: string;
   endpoint: string;
   method: string;
@@ -50,5 +51,6 @@ export async function createIndexes() {
   const collection = db.collection<ApiUsage>(Collections.API_USAGE);
   
   await collection.createIndex({ orgId: 1, createdAt: -1 });
+  await collection.createIndex({ userId: 1, createdAt: -1 });
   await collection.createIndex({ provider: 1, createdAt: -1 });
 }

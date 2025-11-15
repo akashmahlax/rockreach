@@ -4,6 +4,7 @@ import { streamText, convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { logApiUsage } from "@/models/ApiUsage";
 import { createAssistantTools } from "@/lib/assistant/tools";
 import { getDefaultModel } from "@/lib/ai-provider";
+import { rateLimit } from "@/lib/rate-limit";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -16,7 +17,18 @@ export async function POST(req: Request) {
   }
 
   const orgId = session.user.orgId || "";
+  const userId = session.user.id || "";
   const startedAt = Date.now();
+
+  // Rate limiting: 20 requests per minute per user
+  const rateLimitResult = await rateLimit(`assistant:${userId}`, {
+    limit: 20,
+    windowSeconds: 60,
+  });
+  
+  if (rateLimitResult) {
+    return rateLimitResult;
+  }
 
   try {
     const body = (await req.json()) as {
@@ -91,6 +103,7 @@ export async function POST(req: Request) {
         });
         await logApiUsage({
           orgId,
+          userId,
           provider,
           endpoint: "assistant_stream",
           method: "POST",
@@ -103,6 +116,7 @@ export async function POST(req: Request) {
         console.error("Stream error:", error);
         await logApiUsage({
           orgId,
+          userId,
           provider,
           endpoint: "assistant_stream",
           method: "POST",
@@ -128,6 +142,7 @@ export async function POST(req: Request) {
 
     await logApiUsage({
       orgId,
+      userId,
       provider: "assistant",
       endpoint: "assistant_stream",
       method: "POST",

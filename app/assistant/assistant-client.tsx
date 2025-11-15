@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Bot,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Copy,
   DollarSign,
   Edit3,
@@ -31,6 +33,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, UIMessage } from "ai";
 
@@ -114,6 +122,8 @@ export function AssistantClient({ user }: AssistantClientProps) {
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [usagePeriod, setUsagePeriod] = useState<"24h" | "7d" | "30d">("30d");
   const [loadingStats, setLoadingStats] = useState(false);
+  const [isConversationsOpen, setIsConversationsOpen] = useState(true);
+  const [isUsageStatsOpen, setIsUsageStatsOpen] = useState(true);
 
   // Local input state for the textarea
   const [localInput, setLocalInput] = useState("");
@@ -521,9 +531,30 @@ export function AssistantClient({ user }: AssistantClientProps) {
             </button>
           </div>
 
-          {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
-            {conversations.map((conv) => (
+          {/* Conversations List - Collapsible with ScrollArea */}
+          <Collapsible
+            open={isConversationsOpen}
+            onOpenChange={setIsConversationsOpen}
+            className="flex-1 flex flex-col min-h-0"
+          >
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center justify-between px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg mx-3 mb-2">
+                {isSidebarExpanded && <span>Recent Chats</span>}
+                {isSidebarExpanded ? (
+                  isConversationsOpen ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )
+                ) : (
+                  <div className="h-2 w-2 rounded-full bg-amber-500" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="flex-1 min-h-0">
+              <ScrollArea className="h-full px-3">
+                <div className="space-y-1.5 pb-2">
+                  {conversations.map((conv) => (
               <div
                 key={conv.id}
                 className={cn(
@@ -642,27 +673,47 @@ export function AssistantClient({ user }: AssistantClientProps) {
                 )}
               </div>
             ))}
-          </div>
-
-          {/* AI Usage Stats Section */}
-          {isSidebarExpanded && usageStats && (
-            <div className="border-t border-slate-200 px-3 py-3">
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-3 border border-amber-200/50">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-semibold text-amber-900 flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    AI Usage
-                  </h3>
-                  <select
-                    value={usagePeriod}
-                    onChange={(e) => setUsagePeriod(e.target.value as "24h" | "7d" | "30d")}
-                    className="text-xs border border-amber-200 rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
-                  >
-                    <option value="24h">24h</option>
-                    <option value="7d">7d</option>
-                    <option value="30d">30d</option>
-                  </select>
                 </div>
+              </ScrollArea>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* AI Usage Stats Section - Collapsible */}
+          {isSidebarExpanded && usageStats && (
+            <Collapsible
+              open={isUsageStatsOpen}
+              onOpenChange={setIsUsageStatsOpen}
+              className="border-t border-slate-200"
+            >
+              <div className="px-3 py-2">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between p-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-amber-600" />
+                      <span>AI Usage</span>
+                    </div>
+                    {isUsageStatsOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent>
+                <div className="px-3 pb-3">
+                  <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-lg p-3 border border-amber-200/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <select
+                        value={usagePeriod}
+                        onChange={(e) => setUsagePeriod(e.target.value as "24h" | "7d" | "30d")}
+                        className="text-xs border border-amber-200 rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      >
+                        <option value="24h">24h</option>
+                        <option value="7d">7d</option>
+                        <option value="30d">30d</option>
+                      </select>
+                    </div>
                 
                 {loadingStats ? (
                   <div className="flex items-center justify-center py-2">
@@ -717,8 +768,10 @@ export function AssistantClient({ user }: AssistantClientProps) {
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
 
           {/* Bottom Section - Settings and User */}
