@@ -119,6 +119,8 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [usagePeriod, setUsagePeriod] = useState<"24h" | "7d" | "30d">("30d");
   const [loadingStats, setLoadingStats] = useState(false);
+  // Queue first message to avoid race when creating a new conversation
+  const [pendingSend, setPendingSend] = useState<string | null>(null);
 
   // Local input state for the textarea
   const [localInput, setLocalInput] = useState("");
@@ -297,6 +299,16 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
+
+  // Send any queued message once a new conversation ID is active
+  useEffect(() => {
+    if (pendingSend && activeConvId) {
+      console.log('[Pending Send] Sending queued message for conversation:', activeConvId);
+      sendMessage({ text: pendingSend });
+      setPendingSend(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConvId, pendingSend]);
 
   // Show dynamic thinking steps when loading
   useEffect(() => {
@@ -491,10 +503,8 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     if (!localInput.trim() || isLoading) return;
 
     const input = localInput.trim();
-    let currentConvId = activeConvId;
-
     // Create conversation if none exists
-    if (!currentConvId) {
+    if (!activeConvId) {
       const lowerInput = input.toLowerCase();
       
       // Generate smart title based on keywords
@@ -516,7 +526,16 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
         createdAt: Date.now(),
       };
       
-      // Save to MongoDB and get the inserted ID
+      // Immediately switch UI context to the new conversation
+      setConversations((prev) => [newConv, ...prev]);
+      setActiveConvId(newConv.id);
+      router.push(`/c/${newConv.id}`);
+      
+      // Queue the user's message to send after context switches
+      setPendingSend(input);
+      setLocalInput("");
+
+      // Create the conversation in MongoDB in the background
       try {
         const res = await fetch('/api/assistant/conversations', {
           method: 'POST',
@@ -527,31 +546,13 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
         if (!res.ok) {
           throw new Error('Failed to create conversation');
         }
-        
-        const result = await res.json();
-        const mongoId = result.id || newConv.id;
-        
-        const createdConv = { ...newConv, id: mongoId };
-        
-        console.log('[New Conversation Created]', { mongoId, title: createdConv.title });
-        
-        // Update ALL state synchronously BEFORE sending message
-        setConversations((prev) => [createdConv, ...prev]);
-        setActiveConvId(mongoId);
-        
-        // Navigate to the new conversation URL with MongoDB ID immediately
-        router.push(`/c/${mongoId}`);
-        
-        // Send the message AFTER the context has switched
-        sendMessage({ text: input });
-        setLocalInput("");
-        return; // Exit early
-
+        console.log('[New Conversation Created]', { id: newConv.id, title: newConv.title });
       } catch (error) {
         console.error('Error creating conversation:', error);
         toast.error('Failed to create conversation');
-        return;
       }
+      
+      return; // Important: stop here for new conversations
     }
     
     // This part runs for existing conversations
