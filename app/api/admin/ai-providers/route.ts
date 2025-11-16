@@ -20,8 +20,8 @@ export async function GET() {
   }
 
   try {
-    // Admin sees global providers (that work for all orgs)
-    const providers = await getAIProviders('global');
+    // Get all providers (system-wide)
+    const providers = await getAIProviders();
 
     // Don't send secrets to the client
     const safeProviders = providers.map(({ apiKey, ...rest }) => ({
@@ -78,10 +78,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const orgId = session.user.orgId || '';
     const userId = session.user.id!;
 
-    // Admin-configured providers are global (work for all organizations)
+    // Save provider (works for all users automatically)
     const result = await upsertAIProvider('global', userId, {
       _id,
       provider,
@@ -97,7 +96,7 @@ export async function POST(req: NextRequest) {
     // Audit log
     if (result) {
       await createAuditLog({
-        orgId,
+        orgId: session.user.orgId || '',
         actorId: userId,
         action: _id ? 'update_ai_provider' : 'create_ai_provider',
         target: 'ai_provider',
@@ -149,7 +148,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const deleted = await deleteAIProvider('global', providerId);
+    const deleted = await deleteAIProvider('', providerId);
 
     if (!deleted) {
       return NextResponse.json(

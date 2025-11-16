@@ -45,60 +45,41 @@ export interface EmailProviderSettings {
 }
 
 // AI Provider functions
-export async function getAIProviders(orgId: string) {
+export async function getAIProviders(orgId?: string) {
   const db = await getDb();
   
-  // Get both global providers (for all orgs) and org-specific providers
+  // Get ALL providers - no organization filtering
   const providers = await db
     .collection<AIProviderSettings>(Collections.AI_PROVIDERS)
-    .find({ 
-      $or: [
-        { organizationId: 'global' },
-        { organizationId: orgId }
-      ]
-    })
+    .find({})
     .toArray();
 
   return providers.map(p => ({
     ...p,
     hasCredentials: Boolean(p.apiKey),
-    isGlobal: p.organizationId === 'global',
   }));
 }
 
-export async function getDefaultAIProvider(orgId: string) {
+export async function getDefaultAIProvider(orgId?: string) {
   const db = await getDb();
   
-  // First check for global default provider (configured by admin)
-  let provider = await db
+  // Get default provider - no organization filtering
+  const provider = await db
     .collection<AIProviderSettings>(Collections.AI_PROVIDERS)
-    .findOne({ organizationId: 'global', isDefault: true, isEnabled: true });
-  
-  // If no global provider, check org-specific provider
-  if (!provider) {
-    provider = await db
-      .collection<AIProviderSettings>(Collections.AI_PROVIDERS)
-      .findOne({ organizationId: orgId, isDefault: true, isEnabled: true });
-  }
+    .findOne({ isDefault: true, isEnabled: true });
 
-  // Return null instead of throwing - let the caller handle fallback
   return provider;
 }
 
 export async function getAIProviderById(orgId: string, providerId: string) {
   const db = await getDb();
   
-  // Check by ID only first (could be global or org-specific)
-  let provider = await db
+  // Get by ID only - no organization filtering
+  const provider = await db
     .collection<AIProviderSettings>(Collections.AI_PROVIDERS)
     .findOne({ _id: providerId });
   
-  // If found and it's global OR matches the org, return it
-  if (provider && (provider.organizationId === 'global' || provider.organizationId === orgId)) {
-    return provider;
-  }
-  
-  return null;
+  return provider;
 }
 
 export async function upsertAIProvider(
@@ -111,17 +92,17 @@ export async function upsertAIProvider(
 
   const now = new Date();
 
-  // If setting as default, unset other defaults (only within the same scope)
+  // If setting as default, unset ALL other defaults (system-wide)
   if (data.isDefault) {
     await collection.updateMany(
-      { organizationId: orgId, _id: { $ne: data._id } },
+      { _id: { $ne: data._id } },
       { $set: { isDefault: false, updatedAt: now } }
     );
   }
 
   const updateData: Partial<AIProviderSettings> = {
     ...data,
-    organizationId: orgId,
+    organizationId: 'global', // Always global
     updatedAt: now,
   };
 
@@ -155,7 +136,7 @@ export async function deleteAIProvider(orgId: string, providerId: string) {
   const db = await getDb();
   const objectId = new ObjectId(providerId);
   
-  // Find by _id only (unique identifier) - no org filter needed
+  // Get provider by ID
   const provider = await db
     .collection<AIProviderSettings>(Collections.AI_PROVIDERS)
     .findOne({ _id: objectId as unknown as string });
@@ -164,7 +145,7 @@ export async function deleteAIProvider(orgId: string, providerId: string) {
     throw new Error('Cannot delete default provider. Set another provider as default first.');
   }
 
-  // Delete by _id only
+  // Delete provider
   const result = await db
     .collection<AIProviderSettings>(Collections.AI_PROVIDERS)
     .deleteOne({ _id: objectId as unknown as string });
@@ -173,41 +154,28 @@ export async function deleteAIProvider(orgId: string, providerId: string) {
 }
 
 // Email Provider functions
-export async function getEmailProviders(orgId: string) {
+export async function getEmailProviders(orgId?: string) {
   const db = await getDb();
   
-  // Get both global providers (for all orgs) and org-specific providers
+  // Get ALL providers - no organization filtering
   const providers = await db
     .collection<EmailProviderSettings>(Collections.EMAIL_PROVIDERS)
-    .find({ 
-      $or: [
-        { organizationId: 'global' },
-        { organizationId: orgId }
-      ]
-    })
+    .find({})
     .toArray();
 
   return providers.map(p => ({
     ...p,
     hasCredentials: !!(p.apiKey || p.smtpConfig),
-    isGlobal: p.organizationId === 'global',
   }));
 }
 
-export async function getDefaultEmailProvider(orgId: string) {
+export async function getDefaultEmailProvider(orgId?: string) {
   const db = await getDb();
   
-  // First check for global default provider (configured by admin)
-  let provider = await db
+  // Get default provider - no organization filtering
+  const provider = await db
     .collection<EmailProviderSettings>(Collections.EMAIL_PROVIDERS)
-    .findOne({ organizationId: 'global', isDefault: true, isEnabled: true });
-  
-  // If no global provider, check org-specific provider
-  if (!provider) {
-    provider = await db
-      .collection<EmailProviderSettings>(Collections.EMAIL_PROVIDERS)
-      .findOne({ organizationId: orgId, isDefault: true, isEnabled: true });
-  }
+    .findOne({ isDefault: true, isEnabled: true });
 
   if (!provider) {
     throw new Error('No default email provider configured');
@@ -226,17 +194,17 @@ export async function upsertEmailProvider(
 
   const now = new Date();
 
-  // If setting as default, unset other defaults (only within the same scope)
+  // If setting as default, unset ALL other defaults (system-wide)
   if (data.isDefault) {
     await collection.updateMany(
-      { organizationId: orgId, _id: { $ne: data._id } },
+      { _id: { $ne: data._id } },
       { $set: { isDefault: false, updatedAt: now } }
     );
   }
 
   const updateData: Partial<EmailProviderSettings> = {
     ...data,
-    organizationId: orgId,
+    organizationId: 'global', // Always global
     updatedAt: now,
   };
 
@@ -264,7 +232,7 @@ export async function upsertEmailProvider(
 export async function deleteEmailProvider(orgId: string, providerId: string) {
   const db = await getDb();
   
-  // Find by _id only (unique identifier) - no org filter needed
+  // Get provider by ID
   const provider = await db
     .collection<EmailProviderSettings>(Collections.EMAIL_PROVIDERS)
     .findOne({ _id: providerId });
@@ -273,7 +241,7 @@ export async function deleteEmailProvider(orgId: string, providerId: string) {
     throw new Error('Cannot delete default provider. Set another provider as default first.');
   }
 
-  // Delete by _id only
+  // Delete provider
   const result = await db
     .collection<EmailProviderSettings>(Collections.EMAIL_PROVIDERS)
     .deleteOne({ _id: providerId });

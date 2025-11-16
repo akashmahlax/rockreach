@@ -125,16 +125,11 @@ async function getEmailProviderById(orgId: string, providerId: string) {
   const { getDb, Collections } = await import('@/lib/db');
   const db = await getDb();
   
-  // Check by ID only first (could be global or org-specific)
+  // Get by ID only - all providers are global
   const provider = await db.collection(Collections.EMAIL_PROVIDERS).findOne({
     _id: new ObjectId(providerId),
   });
   
-  // If found and it's global OR matches the org, return it
-  if (provider && (provider.organizationId === 'global' || provider.organizationId === orgId)) {
-    return provider;
-  }
-  
-  return null;
+  return provider;
 }
  

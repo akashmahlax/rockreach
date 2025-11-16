@@ -19,8 +19,8 @@ export async function GET() {
   }
 
   try {
-    // Admin sees global providers (that work for all orgs)
-    const providers = await getEmailProviders('global');
+    // Get all providers (system-wide)
+    const providers = await getEmailProviders();
 
     // Don't send credentials to client
     const safeProviders = providers.map(p => ({
@@ -90,10 +90,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const orgId = session.user.orgId || '';
     const userId = session.user.id!;
 
-    // Admin-configured providers are global (work for all organizations)
+    // Save provider (works for all users automatically)
     const result = await upsertEmailProvider('global', userId, {
       _id,
       provider,
@@ -110,7 +109,7 @@ export async function POST(req: Request) {
     // Audit log
     if (result) {
       await createAuditLog({
-        orgId,
+        orgId: session.user.orgId || '',
         actorId: userId,
         action: _id ? 'update_email_provider' : 'create_email_provider',
         target: 'email_provider',
@@ -155,7 +154,7 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const deleted = await deleteEmailProvider('global', providerId);
+    const deleted = await deleteEmailProvider('', providerId);
 
     if (!deleted) {
       return NextResponse.json(
