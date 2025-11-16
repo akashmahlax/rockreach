@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, UIMessage } from "ai";
+import { UIMessage } from "ai";
 import Link from "next/link";
 import { MessageBubble } from "@/components/c/message-bubble";
 import { EmptyState } from "@/components/c/empty-state";
@@ -127,7 +127,8 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   // Local input state for the textarea
   const [localInput, setLocalInput] = useState("");
 
-  // Use the latest useChat hook with proper absolute URL for production
+  // Use useChat hook from @ai-sdk/react v2.0.92
+  // This version sends messages to /api/chat by default, so we need to handle routing
   const {
     messages,
     sendMessage,
@@ -137,19 +138,6 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     setMessages,
   } = useChat({
     id: activeConvId || undefined,
-    transport: new DefaultChatTransport({
-      api: typeof window !== 'undefined' && window.location.origin 
-        ? `${window.location.origin}/api/assistant/stream`
-        : "/api/assistant/stream",
-      body: () => ({
-        conversationId: activeConvId, // Send conversationId so stream can load from MongoDB
-        userMetadata: {
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-      }),
-    }),
     onFinish: async ({ messages: allMessages }) => {
       console.log('[onFinish] AI response complete:', { 
         messageCount: allMessages.length,
