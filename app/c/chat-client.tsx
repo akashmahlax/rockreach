@@ -120,8 +120,6 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [usagePeriod, setUsagePeriod] = useState<"24h" | "7d" | "30d">("30d");
   const [loadingStats, setLoadingStats] = useState(false);
-  // Queue first message to avoid race when creating a new conversation
-  const [pendingSend, setPendingSend] = useState<string | null>(null);
   // Track conversation switching for loading overlay
   const [isSwitchingConversation, setIsSwitchingConversation] = useState(false);
 
@@ -150,19 +148,16 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
         },
       }),
     }),
-    onFinish: async ({ message }) => {
-      console.log('[useChat] onFinish:', { message, messageCount: messages.length });
+    onFinish: async ({ message, messages: allMessages }) => {
+      console.log('[useChat] onFinish:', { message, messageCount: allMessages.length });
       
       if (activeConvId) {
-        // Wait a brief moment for messages state to update
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         // Get the current conversation
         const currentConv = conversations.find((c) => c.id === activeConvId);
         
         if (currentConv) {
-          // Include the new assistant message in the updated messages
-          const updatedMessages = [...messages, message];
+          // Use the complete messages array from the callback (includes the new message)
+          const updatedMessages = allMessages;
           
           const updatedConv = { 
             ...currentConv, 
@@ -305,36 +300,30 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     }
   }, [messages, thinkingSteps, status]);
 
-  // Auto-resize textarea
+  // Auto-resize textarea with debounce to prevent layout thrashing
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-    }
+    const timeoutId = setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      }
+    }, 10);
+    return () => clearTimeout(timeoutId);
   }, [localInput]);
 
   // Sync conversationId prop with activeConvId state when URL changes
   useEffect(() => {
-    console.log('[URL Change] conversationId prop changed:', conversationId);
+    console.log('[URL Change] conversationId prop changed:', conversationId, 'activeConvId:', activeConvId);
+    
     if (conversationId !== activeConvId) {
       setActiveConvId(conversationId);
-      // Clear messages to show loading state
+      // Clear messages to show loading state when switching conversations
       if (conversationId) {
         setMessages([]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
-
-  // Send any queued message once a new conversation ID is active
-  useEffect(() => {
-    if (pendingSend && activeConvId) {
-      console.log('[Pending Send] Sending queued message for conversation:', activeConvId);
-      sendMessage({ text: pendingSend });
-      setPendingSend(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConvId, pendingSend]);
 
   // Show dynamic thinking steps when loading
   useEffect(() => {
@@ -434,14 +423,9 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     fetchUsageStats(usagePeriod);
   }, [usagePeriod]);
 
-  const createNewConversation = async () => {
-    // Clear messages and active conversation first
-    setMessages([]);
-    setActiveConvId(null);
-    setLocalInput("");
-    
-    // Always navigate to /c/new which will create a fresh chat
-    router.push('/c/new');
+  const createNewConversation = () => {
+    // Redirect to API route that creates conversation in MongoDB first
+    window.location.href = '/api/assistant/new-conversation';
   };
 
   const deleteConversation = async (id: string) => {
@@ -522,6 +506,21 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     setRenamingConvId(null);
     setRenameValue("");
   };
+  
+  // Helper function to generate smart title based on input
+  const generateSmartTitle = (input: string): string => {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes("find") || lowerInput.includes("search") || lowerInput.includes("get")) {
+      return "🔍 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+    } else if (lowerInput.includes("email") || lowerInput.includes("send") || lowerInput.includes("message")) {
+      return "✉️ " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+    } else if (lowerInput.includes("ceo") || lowerInput.includes("founder") || lowerInput.includes("executive")) {
+      return "👤 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+    } else {
+      return input.slice(0, 35) + (input.length > 35 ? "..." : "");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -529,113 +528,61 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     if (!localInput.trim() || isLoading) return;
 
     const input = localInput.trim();
-    // Create conversation if none exists
-    if (!activeConvId) {
-      const lowerInput = input.toLowerCase();
-      
-      // Generate smart title based on keywords
-      let title = "";
-      if (lowerInput.includes("find") || lowerInput.includes("search") || lowerInput.includes("get")) {
-        title = "🔍 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-      } else if (lowerInput.includes("email") || lowerInput.includes("send") || lowerInput.includes("message")) {
-        title = "✉️ " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-      } else if (lowerInput.includes("ceo") || lowerInput.includes("founder") || lowerInput.includes("executive")) {
-        title = "👤 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-      } else {
-        title = input.slice(0, 35) + (input.length > 35 ? "..." : "");
-      }
-      
-      const newConv: Conversation = {
-        id: `conv-${Date.now()}`,
-        title,
-        messages: [],
-        createdAt: Date.now(),
-      };
-      
-      // Immediately switch UI context to the new conversation
-      setConversations((prev) => [newConv, ...prev]);
-      setActiveConvId(newConv.id);
-      router.push(`/c/${newConv.id}`);
-      
-      // Queue the user's message to send after context switches
-      setPendingSend(input);
-      setLocalInput("");
-
-      // Create the conversation in MongoDB in the background
-      try {
-        const res = await fetch('/api/assistant/conversations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newConv),
-        });
-        
-        if (!res.ok) {
-          throw new Error('Failed to create conversation');
-        }
-        console.log('[New Conversation Created]', { id: newConv.id, title: newConv.title });
-      } catch (error) {
-        console.error('Error creating conversation:', error);
-        toast.error('Failed to create conversation');
-      }
-      
-      return; // Important: stop here for new conversations
-    }
     
-    // This part runs for existing conversations
-    const activeConv = conversations.find((c) => c.id === activeConvId);
-    if (activeConv && activeConv.title === "New chat" && messages.length === 0) {
-      const lowerInput = input.toLowerCase();
-      let newTitle = "";
-      
-      if (lowerInput.includes("find") || lowerInput.includes("search") || lowerInput.includes("get")) {
-        newTitle = "🔍 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-      } else if (lowerInput.includes("email") || lowerInput.includes("send") || lowerInput.includes("message")) {
-        newTitle = "✉️ " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-      } else if (lowerInput.includes("ceo") || lowerInput.includes("founder") || lowerInput.includes("executive")) {
-        newTitle = "👤 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-      } else {
-        newTitle = input.slice(0, 35) + (input.length > 35 ? "..." : "");
-      }
-      
-      // Save to MongoDB immediately
-      try {
-        await fetch('/api/assistant/conversations', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: activeConvId,
-            title: newTitle,
-          }),
-        });
-        
-        setConversations((prev) => {
-          const updated = prev.map((c) => 
-            c.id === activeConvId ? { ...c, title: newTitle } : c
-          );
-          return updated;
-        });
-        
-        console.log('[Title Updated]', { conversationId: activeConvId, newTitle });
-      } catch (error) {
-        console.error('Error updating title:', error);
-      }
-    }
-
-    // Send the message for existing conversations
-    sendMessage({ text: localInput });
+    // Clear input immediately (optimistic UI)
     setLocalInput("");
     
-    // Save user message to MongoDB after messages state updates
-    // The onFinish callback will save the assistant's response
+    // If no active conversation, shouldn't happen as navbar creates one upfront
+    // But redirect to new conversation as fallback
+    if (!activeConvId) {
+      window.location.href = '/api/assistant/new-conversation';
+      return;
+    }
+    
+    // Update title on first message if it's still "New chat"
+    const activeConv = conversations.find((c) => c.id === activeConvId);
+    if (activeConv && activeConv.title === "New chat" && messages.length === 0) {
+      const newTitle = generateSmartTitle(input);
+      
+      // Update UI immediately (optimistic)
+      setConversations((prev) =>
+        prev.map((c) => (c.id === activeConvId ? { ...c, title: newTitle } : c))
+      );
+      
+      // Update in MongoDB in background
+      fetch('/api/assistant/conversations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeConvId,
+          title: newTitle,
+        }),
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to update title');
+          console.log('[Title Updated in DB]', { conversationId: activeConvId, newTitle });
+        })
+        .catch(error => {
+          console.error('Error updating title in DB:', error);
+          // Non-critical - keep optimistic update
+        });
+    }
+
+    // Send the message
+    sendMessage({ text: input });
   };
 
   const copyMessage = (message: UIMessage) => {
     const textContent = message.parts
       .filter((p) => p.type === "text")
-      .map((p) => p.text)
+      .map((p) => ("text" in p ? p.text : "") || "")
       .join("");
-    navigator.clipboard.writeText(textContent);
-    toast.success("Copied to clipboard");
+    if (textContent) {
+      navigator.clipboard.writeText(textContent);
+      toast.success("Copied to clipboard");
+    } else {
+      toast.error("No text to copy");
+    }
   };
 
   const startEdit = (messageId: string) => {
@@ -643,7 +590,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     if (message) {
       const textContent = message.parts
         .filter((p) => p.type === "text")
-        .map((p) => p.text)
+        .map((p) => ("text" in p ? p.text : "") || "")
         .join(" ");
       setEditingMessageId(messageId);
       setEditContent(textContent);

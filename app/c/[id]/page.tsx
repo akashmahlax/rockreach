@@ -12,9 +12,14 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   // Await params since it's a Promise in Next.js 15+
   const { id } = await params;
 
+  // If user navigates to /c/new, redirect to API that creates conversation first
+  if (id === "new") {
+    redirect("/api/assistant/new-conversation");
+  }
+
   return (
     <ChatClient
-      conversationId={id === "new" ? null : id}
+      conversationId={id}
       user={{
         name: session.user.name,
         email: session.user.email,

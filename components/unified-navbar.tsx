@@ -80,7 +80,7 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
           <div className="flex lg:hidden items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
             L
           </div>
-          <span className="font-semibold font-sans bg-gradient-to-t from-amber-200 to-white p-2 border border-gray-100 rounded-2xl text-lg hidden sm:inline-block">LogiGrow</span>
+          <span className="font-semibold font-sans bg-linear-to-t from-amber-200 to-white p-2 border border-gray-100 rounded-2xl text-lg hidden sm:inline-block">LogiGrow</span>
         </Link>
 
         {/* Desktop Navigation with dropdowns */}
@@ -135,7 +135,7 @@ export function UnifiedNavbar({ user }: UnifiedNavbarProps) {
                       <ListItem href="/leads/search" title="Search Leads (Classic Way)" icon={<SearchIcon className="h-4 w-4" />}>
                         Find prospects by LinkedIn or email
                       </ListItem>
-                       <ListItem href="/c" title="Agentic AI Search" icon={<SearchIcon className="h-4 w-4" />}>
+                       <ListItem href="/api/assistant/new-conversation" title="Agentic AI Search" icon={<SearchIcon className="h-4 w-4" />}>
                         Agentic AI - Your AI Lead Research Assistant
                       </ListItem>
                       {/* <ListItem href="/leads/bulk" title="Bulk Upload" icon={<Upload className="h-4 w-4" />}>
