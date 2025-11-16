@@ -196,7 +196,7 @@ export async function POST(req: Request) {
     });
 
     // Return streaming response compatible with useChat from @ai-sdk/react
-    return result.toTextStreamResponse();
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Assistant stream error", error);
 
