@@ -112,6 +112,19 @@ export default async function AdminDashboard() {
               </Button>
             </CardContent>
           </Card>
+          <Card className="border-[rgba(55,50,47,0.12)] bg-white hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-xl text-[#37322F]">AI Providers</CardTitle>
+              <CardDescription className="text-[#605A57]">
+                Manage AI Providers
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" className="w-full border-[rgba(55,50,47,0.12)] text-[#37322F] hover:bg-[rgba(55,50,47,0.04)]">
+                <Link href="/admin/ai-providers">View AI Providers</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* System Stats Overview */}
