@@ -106,10 +106,12 @@ export async function getDefaultModel(orgId: string) {
       provider: defaultProvider?.provider,
       hasApiKey: !!defaultProvider?.apiKey,
       defaultModel: defaultProvider?.defaultModel,
+      isGlobal: defaultProvider?.organizationId === 'global',
     });
     
     if (defaultProvider && defaultProvider.isEnabled && defaultProvider.apiKey) {
-      console.log('[AI Provider] Using configured provider:', defaultProvider.provider);
+      const providerType = defaultProvider.organizationId === 'global' ? 'global' : 'org-specific';
+      console.log(`[AI Provider] Using ${providerType} provider:`, defaultProvider.provider);
       return getModelInstance(defaultProvider);
     }
     

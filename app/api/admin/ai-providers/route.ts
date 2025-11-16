@@ -20,8 +20,8 @@ export async function GET() {
   }
 
   try {
-    const orgId = session.user.orgId || '';
-    const providers = await getAIProviders(orgId);
+    // Admin sees global providers (that work for all orgs)
+    const providers = await getAIProviders('global');
 
     // Don't send secrets to the client
     const safeProviders = providers.map(({ apiKey, ...rest }) => ({
@@ -81,7 +81,8 @@ export async function POST(req: NextRequest) {
     const orgId = session.user.orgId || '';
     const userId = session.user.id!;
 
-    const result = await upsertAIProvider(orgId, userId, {
+    // Admin-configured providers are global (work for all organizations)
+    const result = await upsertAIProvider('global', userId, {
       _id,
       provider,
       name,
@@ -148,8 +149,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const orgId = session.user.orgId || '';
-    const deleted = await deleteAIProvider(orgId, providerId);
+    const deleted = await deleteAIProvider('global', providerId);
 
     if (!deleted) {
       return NextResponse.json(
@@ -160,7 +160,7 @@ export async function DELETE(req: NextRequest) {
 
     // Audit log
     await createAuditLog({
-      orgId,
+      orgId: session.user.orgId || '',
       actorId: session.user.id!,
       action: 'delete_ai_provider',
       target: 'ai_provider',

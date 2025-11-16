@@ -47,22 +47,39 @@ export interface EmailProviderSettings {
 // AI Provider functions
 export async function getAIProviders(orgId: string) {
   const db = await getDb();
+  
+  // Get both global providers (for all orgs) and org-specific providers
   const providers = await db
     .collection<AIProviderSettings>(Collections.AI_PROVIDERS)
-    .find({ organizationId: orgId })
+    .find({ 
+      $or: [
+        { organizationId: 'global' },
+        { organizationId: orgId }
+      ]
+    })
     .toArray();
 
   return providers.map(p => ({
     ...p,
     hasCredentials: Boolean(p.apiKey),
+    isGlobal: p.organizationId === 'global',
   }));
 }
 
 export async function getDefaultAIProvider(orgId: string) {
   const db = await getDb();
-  const provider = await db
+  
+  // First check for global default provider (configured by admin)
+  let provider = await db
     .collection<AIProviderSettings>(Collections.AI_PROVIDERS)
-    .findOne({ organizationId: orgId, isDefault: true, isEnabled: true });
+    .findOne({ organizationId: 'global', isDefault: true, isEnabled: true });
+  
+  // If no global provider, check org-specific provider
+  if (!provider) {
+    provider = await db
+      .collection<AIProviderSettings>(Collections.AI_PROVIDERS)
+      .findOne({ organizationId: orgId, isDefault: true, isEnabled: true });
+  }
 
   // Return null instead of throwing - let the caller handle fallback
   return provider;
