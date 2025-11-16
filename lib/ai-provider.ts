@@ -161,10 +161,10 @@ export async function getDefaultModel(orgId: string) {
 }
 
 /**
- * Gets all enabled providers for an organization
+ * Gets all enabled providers for an organization (includes global providers)
  */
 export async function getAvailableProviders(orgId: string) {
   const { getAIProviders } = await import('@/models/ProviderSettings');
-  const providers = await getAIProviders(orgId);
+  const providers = await getAIProviders(orgId); // Already returns both global and org-specific
   return providers.filter(p => p.isEnabled);
 }
