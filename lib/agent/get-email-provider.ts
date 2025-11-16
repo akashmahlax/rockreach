@@ -124,9 +124,17 @@ export async function getEmailProvider(orgId: string, providerId?: string): Prom
 async function getEmailProviderById(orgId: string, providerId: string) {
   const { getDb, Collections } = await import('@/lib/db');
   const db = await getDb();
-  return db.collection(Collections.EMAIL_PROVIDERS).findOne({
+  
+  // Check by ID only first (could be global or org-specific)
+  const provider = await db.collection(Collections.EMAIL_PROVIDERS).findOne({
     _id: new ObjectId(providerId),
-    organizationId: orgId,
   });
+  
+  // If found and it's global OR matches the org, return it
+  if (provider && (provider.organizationId === 'global' || provider.organizationId === orgId)) {
+    return provider;
+  }
+  
+  return null;
 }
  

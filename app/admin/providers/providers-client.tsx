@@ -296,9 +296,9 @@ export function ProvidersClient() {
   return (
     <div className="container mx-auto py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Provider Management</h1>
+        <h1 className="text-3xl font-bold">Global Provider Management</h1>
         <p className="text-muted-foreground mt-2">
-          Configure AI and email providers for your organization
+          Configure AI and email providers that work across the entire platform for all organizations
         </p>
       </div>
 
