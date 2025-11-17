@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { rrLookupProfile, rrSearchPeople } from "@/lib/rocketreach";
 import { upsertLead } from "@/models/Lead";
+import { createDatabaseTools } from "./database-tools";
 
 interface ToolContext {
   orgId: string;
@@ -115,7 +116,12 @@ function normalizeLead(profile: RocketReachProfile): NormalizedLead {
 }
 
 export function createAssistantTools({ orgId, userId }: ToolContext) {
+  // Get database tools
+  const databaseTools = createDatabaseTools({ orgId, userId });
+  
   return {
+    // === DATABASE ACCESS TOOLS ===
+    ...databaseTools,
     searchRocketReach: {
       description:
         "Search RocketReach for leads. Provide filters like company, title, location, domain, or name to fetch live contacts. Use this FIRST to find people matching the user's criteria.",
@@ -406,6 +412,11 @@ export function createAssistantTools({ orgId, userId }: ToolContext) {
             'Phone',
             'LinkedIn',
             'Location',
+            'Created At',
+            'Updated At',
+            'Recent Work',
+            'Interests'
+
           ];
 
           // Helper to escape CSV fields
@@ -459,12 +470,17 @@ export function createAssistantTools({ orgId, userId }: ToolContext) {
           // Create download URL
           const downloadUrl = `/api/leads/download-csv?fileId=${fileId}`;
 
+          // Build full download URL (will work both locally and in production)
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+          const fullDownloadUrl = `${baseUrl}${downloadUrl}`;
+          
           return {
             success: true,
             downloadUrl,
+            fullDownloadUrl,
             filename: finalFilename,
             recordCount: leads.length,
-            message: `✓ CSV file generated with ${leads.length} lead(s). Click the link below to download:\n\n[Download ${finalFilename}](${downloadUrl})\n\n📊 The file includes: Full names, titles, companies, emails, phone numbers, LinkedIn profiles, and locations.`,
+            message: `✅ **CSV Export Ready!**\n\n📥 **[Click Here to Download ${finalFilename} →](${fullDownloadUrl})**\n\n📊 **What's included:**\n- ${leads.length} leads with complete information\n- Full names, job titles, companies\n- Email addresses and phone numbers\n- LinkedIn profiles and locations\n\n⏰ *Download link expires in 24 hours*`,
             expiresIn: '24 hours',
           };
         } catch (error) {
