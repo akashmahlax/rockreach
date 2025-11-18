@@ -57,18 +57,10 @@ export function MessageBubble({
 
   return (
     <div className={cn(
-      "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
-      isUser ? "justify-end" : "justify-start"
+      "animate-in fade-in slide-in-from-bottom-2 duration-300",
+      isUser ? "text-slate-700" : "text-slate-900"
     )}>
-      <div className={cn(
-        isUser 
-          ? "max-w-[75%] bg-slate-700 text-white rounded-2xl px-4 py-2.5" 
-          : "w-full"
-      )}>
-        <div className={cn(
-          "text-[15px] leading-relaxed",
-          isUser ? "text-white" : "text-slate-900"
-        )}>
+      <div className="text-[15px] leading-relaxed">
           {!message.parts || message.parts.length === 0 ? (
             <div className="text-slate-400 italic">No content</div>
           ) : (
@@ -307,7 +299,6 @@ export function MessageBubble({
               return null;
             })
           )}
-        </div>
         
         {/* Action Buttons */}
         {message.parts.some(part => part.type === "text" && part.text.trim().length > 0) && (
