@@ -3,6 +3,7 @@ import { z } from "zod";
 import { rrLookupProfile, rrSearchPeople } from "@/lib/rocketreach";
 import { upsertLead } from "@/models/Lead";
 import { createDatabaseTools } from "./database-tools";
+import { createCampaignTools } from "./campaign-tools";
 
 interface ToolContext {
   orgId: string;
@@ -119,9 +120,15 @@ export function createAssistantTools({ orgId, userId }: ToolContext) {
   // Get database tools
   const databaseTools = createDatabaseTools({ orgId, userId });
   
+  // Get campaign tools
+  const campaignTools = createCampaignTools({ orgId, userId });
+  
   return {
     // === DATABASE ACCESS TOOLS ===
     ...databaseTools,
+    
+    // === EMAIL CAMPAIGN TOOLS ===
+    ...campaignTools,
     searchRocketReach: {
       description:
         "Search RocketReach for leads. Provide filters like company, title, location, domain, or name to fetch live contacts. Use this FIRST to find people matching the user's criteria.",
