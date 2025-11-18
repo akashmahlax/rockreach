@@ -886,7 +886,7 @@ export function AssistantClient({ user }: AssistantClientProps) {
                         onSaveEdit={saveEdit}
                         onCancelEdit={() => setEditingMessageId(null)}
                         onCopy={() => copyMessage(message)}
-                        onEdit={() => startEdit(message.id)}
+                       
                       />
                     );
                   })}

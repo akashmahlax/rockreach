@@ -521,14 +521,24 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   const generateSmartTitle = (input: string): string => {
     const lowerInput = input.toLowerCase();
     
-    if (lowerInput.includes("find") || lowerInput.includes("search") || lowerInput.includes("get")) {
-      return "🔍 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-    } else if (lowerInput.includes("email") || lowerInput.includes("send") || lowerInput.includes("message")) {
-      return "✉️ " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
-    } else if (lowerInput.includes("ceo") || lowerInput.includes("founder") || lowerInput.includes("executive")) {
-      return "👤 " + input.slice(0, 30) + (input.length > 30 ? "..." : "");
+    // Remove common prefixes to make titles cleaner
+    let cleanInput = input
+      .replace(/^(find|search|get|show|list|give me|can you|please|i need|i want)/i, '')
+      .trim();
+    
+    if (!cleanInput) cleanInput = input; // Fallback if nothing left
+    
+    // Add emoji based on context
+    if (lowerInput.includes("find") || lowerInput.includes("search") || lowerInput.includes("leads")) {
+      return "🔍 " + cleanInput.slice(0, 40) + (cleanInput.length > 40 ? "..." : "");
+    } else if (lowerInput.includes("email") || lowerInput.includes("send") || lowerInput.includes("campaign")) {
+      return "✉️ " + cleanInput.slice(0, 40) + (cleanInput.length > 40 ? "..." : "");
+    } else if (lowerInput.includes("cto") || lowerInput.includes("ceo") || lowerInput.includes("founder") || lowerInput.includes("vp")) {
+      return "👤 " + cleanInput.slice(0, 40) + (cleanInput.length > 40 ? "..." : "");
+    } else if (lowerInput.includes("export") || lowerInput.includes("csv") || lowerInput.includes("download")) {
+      return "📊 " + cleanInput.slice(0, 40) + (cleanInput.length > 40 ? "..." : "");
     } else {
-      return input.slice(0, 35) + (input.length > 35 ? "..." : "");
+      return cleanInput.slice(0, 45) + (cleanInput.length > 45 ? "..." : "");
     }
   };
 
@@ -930,7 +940,6 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                         onSaveEdit={saveEdit}
                         onCancelEdit={() => setEditingMessageId(null)}
                         onCopy={() => copyMessage(message)}
-                        onEdit={() => startEdit(message.id)}
                       />
                     );
                   })}

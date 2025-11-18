@@ -19,7 +19,6 @@ interface MessageBubbleProps {
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onCopy: (message: UIMessage) => void;
-  onEdit: () => void;
 }
 
 export function MessageBubble({
@@ -30,7 +29,6 @@ export function MessageBubble({
   onSaveEdit,
   onCancelEdit,
   onCopy,
-  onEdit,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
@@ -323,16 +321,6 @@ export function MessageBubble({
                 className="h-7 w-7 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               >
                 <Copy className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {isUser && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onEdit}
-                className="h-7 px-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              >
-                Edit
               </Button>
             )}
           </div>
