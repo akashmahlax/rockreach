@@ -925,7 +925,8 @@ export function AssistantClient({ user }: AssistantClientProps) {
         </div>
 
         {/* Input Area - Classic Clean */}
-                  <div className="mx-auto rounded-full max-w-4xl px-6 py-4">
+        <div className="border-t border-neutral-200 bg-white">
+          <div className="mx-auto max-w-4xl px-6 py-4">
             <form onSubmit={handleSubmit} className="flex items-end gap-2">
               <Textarea
                 ref={textareaRef}
@@ -935,8 +936,7 @@ export function AssistantClient({ user }: AssistantClientProps) {
                 onKeyDown={handleKeyDown}
                 placeholder="Find 10 CTO of Tech Startups in San Francisco..."
                 disabled={isLoading}
-                
-                
+                className="min-h-11 max-h-[200px] flex-1 resize-none  rounded px-3 py-2 text-sm focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400 focus:outline-none"
               />
               <Button
                 type="submit"
@@ -959,6 +959,7 @@ export function AssistantClient({ user }: AssistantClientProps) {
               </p>
             )}
           </div>
+        </div>
       </div>
     </div>
   );

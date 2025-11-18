@@ -987,7 +987,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                 value={localInput}
                 onChange={(e) => setLocalInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type your message..."
+                placeholder="Find 10 CTO of Tech Startups in San Francisco..."
                 disabled={isLoading}
                 className="min-h-11 max-h-[200px] flex-1 resize-none border border-neutral-300 rounded px-3 py-2 text-sm focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400 focus:outline-none"
               />
