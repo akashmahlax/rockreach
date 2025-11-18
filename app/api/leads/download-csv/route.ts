@@ -19,42 +19,17 @@ export async function GET(req: Request) {
     const client = await clientPromise;
     const db = client.db('rockreach');
 
-    // Get user's organization ID
-    const user = await db.collection('users').findOne({ email: session.user.email });
-    const orgId = user?.orgId ? String(user.orgId) : session.user.orgId ?? session.user.email;
+    console.log('[Download CSV] Looking for file:', { fileId, userEmail: session.user.email });
 
-    console.log('[Download CSV] Looking for file:', { fileId, orgId, userEmail: session.user.email });
-
-    // Try to fetch the temporary file with the user's orgId
-    let tempFile = await db.collection('temp_files').findOne({
-      fileId,
-      orgId,
-    });
-
-    // If not found with orgId, try with just fileId (fallback for debugging)
-    if (!tempFile) {
-      console.log('[Download CSV] Not found with orgId, trying fileId only...');
-      tempFile = await db.collection('temp_files').findOne({ fileId });
-      
-      if (tempFile) {
-        console.log('[Download CSV] Found with different orgId:', {
-          fileOrgId: tempFile.orgId,
-          requestedOrgId: orgId,
-          match: tempFile.orgId === orgId
-        });
-      }
-    }
+    // Fetch the temporary file by fileId only
+    const tempFile = await db.collection('temp_files').findOne({ fileId });
 
     console.log('[Download CSV] File found:', tempFile ? 'YES' : 'NO');
 
     if (!tempFile) {
       return NextResponse.json({ 
         error: 'File not found or expired',
-        debug: { 
-          fileId, 
-          requestedOrgId: orgId,
-          message: 'The file may have expired or the fileId is incorrect.'
-        }
+        message: 'The file may have expired or the fileId is incorrect.'
       }, { status: 404 });
     }
 

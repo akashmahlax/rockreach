@@ -463,11 +463,10 @@ export function createAssistantTools({ orgId, userId }: ToolContext) {
           const db = await getDb();
           const fileId = randomUUID();
           
-          console.log('[Export CSV] Creating temp file:', { fileId, orgId, userId, filename: finalFilename });
+          console.log('[Export CSV] Creating temp file:', { fileId, userId, filename: finalFilename });
           
           await db.collection('temp_files').insertOne({
             fileId,
-            orgId,
             userId,
             content: csvContent,
             filename: finalFilename,
