@@ -76,12 +76,12 @@ export function AssistantSidebar({
   };
 
   return (
-    <div className="w-80 bg-white border-r border-slate-200 flex flex-col h-full">
+    <div className="w-80 bg-white border-r border-neutral-200 flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-slate-200">
+      <div className="p-4 border-b border-neutral-200">
         <Button
           onClick={onNewConversation}
-          className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+          className="w-full"
         >
           <Plus className="h-4 w-4 mr-2" />
           New Chat
@@ -92,7 +92,7 @@ export function AssistantSidebar({
         <div className="p-4 space-y-4">
           {/* Recent Chats Section */}
           <Collapsible open={isConversationsOpen} onOpenChange={setIsConversationsOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold text-slate-700 hover:text-slate-900">
+            <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold text-neutral-700 hover:text-neutral-900">
               <span>Recent Chats</span>
               {isConversationsOpen ? (
                 <ChevronDown className="h-4 w-4" />
@@ -102,7 +102,7 @@ export function AssistantSidebar({
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 space-y-1">
               {conversations.length === 0 ? (
-                <p className="text-xs text-slate-500 py-4 text-center">
+                <p className="text-xs text-neutral-500 py-4 text-center">
                   No conversations yet
                 </p>
               ) : (
@@ -112,8 +112,8 @@ export function AssistantSidebar({
                     className={cn(
                       "group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors",
                       activeConvId === conv.id
-                        ? "bg-amber-50 text-amber-900"
-                        : "hover:bg-slate-50 text-slate-700"
+                        ? "bg-neutral-100 text-neutral-900 font-medium"
+                        : "hover:bg-neutral-50 text-neutral-700"
                     )}
                   >
                     {renamingConvId === conv.id ? (
@@ -126,7 +126,7 @@ export function AssistantSidebar({
                           if (e.key === "Enter") handleRenameSubmit(conv.id);
                           if (e.key === "Escape") setRenamingConvId(null);
                         }}
-                        className="flex-1 bg-white border border-amber-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        className="flex-1 bg-white border border-neutral-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400"
                         autoFocus
                       />
                     ) : (
@@ -142,10 +142,10 @@ export function AssistantSidebar({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 opacity-60 group-hover:opacity-100 hover:bg-slate-200 transition-all"
+                              className="h-7 w-7 opacity-100 hover:bg-neutral-200 transition-all shrink-0"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <MoreVertical className="h-3 w-3" />
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -174,7 +174,7 @@ export function AssistantSidebar({
 
           {/* AI Usage Stats Section */}
           <Collapsible open={isUsageStatsOpen} onOpenChange={setIsUsageStatsOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold text-slate-700 hover:text-slate-900">
+            <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold text-neutral-700 hover:text-neutral-900">
               <span>AI Usage Stats</span>
               {isUsageStatsOpen ? (
                 <ChevronDown className="h-4 w-4" />
@@ -190,7 +190,7 @@ export function AssistantSidebar({
                   onChange={(e) =>
                     onUsagePeriodChange(e.target.value as "24h" | "7d" | "30d")
                   }
-                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full px-3 py-1.5 text-xs border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400"
                 >
                   <option value="24h">Last 24 hours</option>
                   <option value="7d">Last 7 days</option>
@@ -199,7 +199,7 @@ export function AssistantSidebar({
 
                 {loadingStats ? (
                   <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                    <Loader2 className="h-4 w-4 animate-spin text-neutral-500" />
                   </div>
                 ) : usageStats ? (
                   <div className="space-y-2">

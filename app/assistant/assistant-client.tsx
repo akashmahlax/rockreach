@@ -924,44 +924,40 @@ export function AssistantClient({ user }: AssistantClientProps) {
           </div>
         </div>
 
-        {/* Input Area - ChatGPT style */}
-        <div className="border-t border-slate-200 bg-white">
-          <div className="mx-auto max-w-4xl px-6 py-3">
-            <form onSubmit={handleSubmit} className="relative">
-              <div className="relative flex items-end rounded-2xl border border-slate-300 bg-white shadow-sm transition-all duration-200 focus-within:border-amber-400 focus-within:shadow-lg focus-within:ring-2 focus-within:ring-amber-100">
-                <Textarea
-                  ref={textareaRef}
-                  rows={1}
-                  value={localInput}
-                  onChange={(e) => setLocalInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Message AI Assistant..."
-                  disabled={isLoading}
-                  className="min-h-[52px] max-h-[200px] w-full resize-none border-0 bg-transparent py-3 pl-4 pr-12 text-base focus-visible:ring-0 focus-visible:outline-none"
-                />
-                <Button
-                  type="submit"
-                  disabled={!localInput.trim() || isLoading}
-                  size="icon"
-                  className="absolute bottom-2 right-2 h-8 w-8 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 disabled:opacity-50 text-white shrink-0"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+        {/* Input Area - Classic Clean */}
+        <div className="border-t border-neutral-200 bg-white">
+          <div className="mx-auto max-w-4xl px-6 py-4">
+            <form onSubmit={handleSubmit} className="flex items-end gap-2">
+              <Textarea
+                ref={textareaRef}
+                rows={1}
+                value={localInput}
+                onChange={(e) => setLocalInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message..."
+                disabled={isLoading}
+                className="min-h-11 max-h-[200px] flex-1 resize-none border border-neutral-300 rounded px-3 py-2 text-sm focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400 focus:outline-none"
+              />
+              <Button
+                type="submit"
+                disabled={!localInput.trim() || isLoading}
+                size="icon"
+                className="h-11 w-11 shrink-0"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
             </form>
-            <p className="mt-2 text-center text-xs text-slate-500">
-              {isLoading ? (
-                <button onClick={stop} className="font-medium hover:underline text-amber-600">
+            {isLoading && (
+              <p className="mt-2 text-center text-xs text-neutral-500">
+                <button onClick={stop} className="hover:underline">
                   Stop generating
                 </button>
-              ) : (
-                "AI can make mistakes. Check important info."
-              )}
-            </p>
+              </p>
+            )}
           </div>
         </div>
       </div>

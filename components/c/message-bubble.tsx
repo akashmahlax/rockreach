@@ -62,10 +62,10 @@ export function MessageBubble({
     )}>
       <div className={cn(
         "text-[15px] leading-relaxed",
-        isUser ? "text-slate-700" : "text-slate-900"
+        isUser ? "text-neutral-700" : "text-neutral-900"
       )}>
           {!message.parts || message.parts.length === 0 ? (
-            <div className="text-slate-400 italic">No content</div>
+            <div className="text-neutral-400 italic">No content</div>
           ) : (
             message.parts.map((part, index) => {
               
@@ -85,24 +85,24 @@ export function MessageBubble({
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         table: ({ node, ...props }) => (
                           <div className="overflow-x-auto my-4 w-full -mx-4 px-4">
-                            <table className="min-w-full divide-y divide-slate-300 border border-slate-300 rounded-lg overflow-hidden text-xs" {...props} />
+                            <table className="min-w-full divide-y divide-neutral-300 border border-neutral-300 rounded-lg overflow-hidden text-xs" {...props} />
                           </div>
                         ),
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         thead: ({ node, ...props }) => (
-                          <thead className="bg-slate-100" {...props} />
+                          <thead className="bg-neutral-100" {...props} />
                         ),
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         th: ({ node, ...props }) => (
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-slate-800 uppercase tracking-wide whitespace-nowrap" {...props} />
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-800 uppercase tracking-wide whitespace-nowrap" {...props} />
                         ),
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         td: ({ node, ...props }) => (
-                          <td className="px-3 py-2 text-xs text-slate-900 border-t border-slate-200 whitespace-nowrap" {...props} />
+                          <td className="px-3 py-2 text-xs text-neutral-900 border-t border-neutral-200 whitespace-nowrap" {...props} />
                         ),
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         tr: ({ node, ...props }) => (
-                          <tr className="hover:bg-amber-50 transition-colors" {...props} />
+                          <tr className="hover:bg-neutral-50 transition-colors" {...props} />
                         ),
                         // Code blocks with syntax highlighting
                         code: ({ className, children, ...props }: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) => {
@@ -111,23 +111,23 @@ export function MessageBubble({
                           const isBlockCode = match !== null;
                           return isBlockCode ? (
                             <div className="relative group my-4">
-                              <div className="flex items-center justify-between bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg text-xs font-mono">
+                              <div className="flex items-center justify-between bg-neutral-800 text-neutral-200 px-4 py-2 rounded-t-lg text-xs font-mono">
                                 <span>{match ? match[1].toUpperCase() : 'CODE'}</span>
                                 <button
                                   onClick={() => {
                                     navigator.clipboard.writeText(String(children));
                                   }}
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 bg-neutral-700 hover:bg-neutral-600 rounded text-xs"
                                 >
                                   Copy
                                 </button>
                               </div>
-                              <code className={cn(className, "block bg-slate-900 text-slate-100 p-4 rounded-b-lg overflow-x-auto")} {...props}>
+                              <code className={cn(className, "block bg-neutral-900 text-neutral-100 p-4 rounded-b-lg overflow-x-auto")} {...props}>
                                 {children}
                               </code>
                             </div>
                           ) : (
-                            <code className="bg-slate-100 text-amber-600 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                            <code className="bg-neutral-100 text-neutral-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
                               {children}
                             </code>
                           );
@@ -163,34 +163,34 @@ export function MessageBubble({
                         // Blockquotes
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         blockquote: ({ node, ...props }) => (
-                          <blockquote className="border-l-4 border-amber-400 pl-4 my-4 italic text-slate-600" {...props} />
+                          <blockquote className="border-l-4 border-neutral-400 pl-4 my-4 italic text-neutral-600" {...props} />
                         ),
                         // Headings
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         h1: ({ node, ...props }) => (
-                          <h1 className="text-2xl font-bold mt-6 mb-3 text-slate-900" {...props} />
+                          <h1 className="text-2xl font-bold mt-6 mb-3 text-neutral-900" {...props} />
                         ),
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         h2: ({ node, ...props }) => (
-                          <h2 className="text-xl font-bold mt-5 mb-2 text-slate-900" {...props} />
+                          <h2 className="text-xl font-bold mt-5 mb-2 text-neutral-900" {...props} />
                         ),
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         h3: ({ node, ...props }) => (
-                          <h3 className="text-lg font-semibold mt-4 mb-2 text-slate-900" {...props} />
+                          <h3 className="text-lg font-semibold mt-4 mb-2 text-neutral-900" {...props} />
                         ),
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         h4: ({ node, ...props }) => (
-                          <h4 className="text-base font-semibold mt-3 mb-2 text-slate-900" {...props} />
+                          <h4 className="text-base font-semibold mt-3 mb-2 text-neutral-900" {...props} />
                         ),
                         // Horizontal rule
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         hr: ({ node, ...props }) => (
-                          <hr className="my-6 border-slate-200" {...props} />
+                          <hr className="my-6 border-neutral-200" {...props} />
                         ),
                         // Strong/Bold
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         strong: ({ node, ...props }) => (
-                          <strong className="font-semibold text-slate-900" {...props} />
+                          <strong className="font-semibold text-neutral-900" {...props} />
                         ),
                         // Emphasis/Italic
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -219,23 +219,23 @@ export function MessageBubble({
                 if (toolPart.toolName === "searchRocketReach" && toolPart.output?.leads) {
                   return (
                     <div key={index} className="mt-3 space-y-2">
-                      <div className="text-sm font-normal text-slate-700 mb-2">
+                      <div className="text-sm font-normal text-neutral-700 mb-2">
                         Found {toolPart.output.leads.length} lead(s):
                       </div>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {toolPart.output.leads.slice(0, 5).map((lead: any, idx: number) => (
-                        <div key={idx} className="p-3 rounded-lg border border-slate-200 bg-white hover:shadow-sm transition-shadow">
+                        <div key={idx} className="p-3 rounded-lg border border-neutral-200 bg-white hover:shadow-sm transition-shadow">
                           <div className="flex items-start gap-3">
-                            <div className="shrink-0 w-10 h-10 rounded-full bg-linear-to-br from-amber-400 to-amber-500 flex items-center justify-center text-white font-medium">
+                            <div className="shrink-0 w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-700 font-medium">
                               {lead.fullName?.charAt(0) || lead.firstName?.charAt(0) || '?'}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-slate-900">{lead.fullName || 'Unknown'}</h4>
-                              <p className="text-sm text-slate-600">{lead.title || 'No title'}</p>
-                              {lead.company && <p className="text-sm text-slate-500">{lead.company}</p>}
+                              <h4 className="font-medium text-neutral-900">{lead.fullName || 'Unknown'}</h4>
+                              <p className="text-sm text-neutral-600">{lead.title || 'No title'}</p>
+                              {lead.company && <p className="text-sm text-neutral-500">{lead.company}</p>}
                               <div className="flex items-center gap-2 mt-1">
                                 {lead.location && (
-                                  <span className="text-xs text-slate-400">📍 {lead.location}</span>
+                                  <span className="text-xs text-neutral-400">📍 {lead.location}</span>
                                 )}
                                 {lead.linkedinUrl && (
                                   <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
@@ -248,7 +248,7 @@ export function MessageBubble({
                         </div>
                       ))}
                       {toolPart.output.leads.length > 5 && (
-                        <p className="text-xs text-slate-500 italic">
+                        <p className="text-xs text-neutral-500 italic">
                           ...and {toolPart.output.leads.length - 5} more
                         </p>
                       )}
@@ -268,14 +268,14 @@ export function MessageBubble({
                       <div className="space-y-2 text-sm">
                         {lead.email && (
                           <div className="flex items-center gap-2">
-                            <span className="text-slate-500">Email:</span>
-                            <span className="font-normal text-slate-900">{lead.email}</span>
+                            <span className="text-neutral-500">Email:</span>
+                            <span className="font-normal text-neutral-900">{lead.email}</span>
                           </div>
                         )}
                         {lead.phone && (
                           <div className="flex items-center gap-2">
-                            <span className="text-slate-500">Phone:</span>
-                            <span className="font-normal text-slate-900">{lead.phone}</span>
+                            <span className="text-neutral-500">Phone:</span>
+                            <span className="font-normal text-neutral-900">{lead.phone}</span>
                           </div>
                         )}
                       </div>
@@ -311,7 +311,7 @@ export function MessageBubble({
                 variant="ghost"
                 size="icon"
                 onClick={() => onCopy(message)}
-                className="h-7 w-7 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                className="h-7 w-7 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
               >
                 <Copy className="h-3.5 w-3.5" />
               </Button>
