@@ -45,19 +45,13 @@ export function MessageLoadingSkeleton() {
 
 export function ResponseLoadingSkeleton() {
   return (
-    <div className="flex gap-4 animate-in fade-in duration-300">
-      <Skeleton className="w-8 h-8 rounded-full shrink-0" />
-      <div className="flex-1 space-y-3">
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-11/12" />
-          <Skeleton className="h-4 w-10/12" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-3 w-3 rounded-full" />
-          <Skeleton className="h-3 w-3 rounded-full" />
-          <Skeleton className="h-3 w-3 rounded-full" />
-        </div>
+    <div className="flex animate-in fade-in slide-in-from-bottom-2 duration-300 justify-start my-6">
+      <div className="flex flex-col gap-3 max-w-[85%] w-full">
+        <Skeleton className="h-5 w-[95%]" />
+        <Skeleton className="h-5 w-[85%]" />
+        <Skeleton className="h-5 w-[90%]" />
+        <Skeleton className="h-5 w-[75%]" />
+        <Skeleton className="h-5 w-[82%]" />
       </div>
     </div>
   );
