@@ -88,12 +88,15 @@ export function Navbar({ user }: NavbarProps) {
               <Link href="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 Dashboard
               </Link>
-              <Link href="/leads/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/leads" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 Leads
               </Link>
-              <Link href="/email/campaigns" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Campaigns
+               <Link href="/c" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Search 
               </Link>
+              {/* <Link href="/email/campaigns" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Campaigns
+              </Link> */}
               <Link href="/docs/guide" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 Docs
               </Link>

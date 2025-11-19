@@ -601,12 +601,12 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
         onDeleteConversation={deleteConversation}
         onRenameConversation={renameConversation}
       />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="flex flex-1 flex-col gap-4 p-4 h-full overflow-hidden relative">
+      <div className="flex flex-1 flex-col overflow-hidden w-full md:w-auto">
+        <div className="flex flex-1 flex-col gap-4 p-2 sm:p-4 h-full overflow-hidden relative">
           {/* Messages */}
           <div className="flex-1 overflow-hidden">
             <div ref={scrollRef} className="h-full overflow-y-auto">
-              <div className="mx-auto max-w-3xl px-4 py-8">
+              <div className="mx-auto max-w-3xl px-2 sm:px-4 py-4 sm:py-8 ml-0 md:ml-auto">
                 {isSwitchingConversation ? (
                   <ChatSkeleton />
                 ) : messages.length === 0 && !isLoading ? (
@@ -688,13 +688,13 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
           </div>
 
           {/* Input Area - ChatGPT Style */}
-          <div className="bg-background pb-6 pt-2">
-            <div className="mx-auto max-w-3xl px-4">
+          <div className="bg-background pb-3 sm:pb-6 pt-2 px-2 sm:px-0">
+            <div className="mx-auto max-w-3xl sm:px-4">
               <form onSubmit={handleSubmit} className="relative">
-                <div className="flex items-end gap-2 dark:bg-slate-800 bg-slate-100 rounded-full px-8 py-6 border-none transition-all">
+                <div className="flex items-end gap-2 dark:bg-slate-800 bg-slate-100 rounded-2xl sm:rounded-full px-4 sm:px-8 py-3 sm:py-6 border-none transition-all">
                   <button
                     type="button"
-                    className="text-muted-foreground hover:text-foreground transition-colors pb-1.5"
+                    className="text-muted-foreground hover:text-foreground transition-colors pb-1.5 hidden sm:block"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
@@ -704,9 +704,9 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                     value={localInput}
                     onChange={(e) => setLocalInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Give me 25 app development clients from san francisco..."
+                    placeholder="Give me 25 app development clients..."
                     disabled={isLoading}
-                    className="flex-1 bg-transparent border-none text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-[15px] leading-relaxed min-h-6 max-h-[200px] py-1.5"
+                    className="flex-1 bg-transparent border-none text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-sm sm:text-[15px] leading-relaxed min-h-6 max-h-[200px] py-1.5"
                   />
                   <Button
                     type="submit"
@@ -714,7 +714,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                     size="icon"
                     variant={localInput.trim() ? "default" : "ghost"}
                     className={cn(
-                      "h-8 w-8 rounded-full shrink-0 transition-all mb-0.5",
+                      "h-7 w-7 sm:h-8 sm:w-8 rounded-full shrink-0 transition-all mb-0.5",
                       localInput.trim() 
                         ? "bg-primary text-primary-foreground hover:bg-primary/90" 
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"

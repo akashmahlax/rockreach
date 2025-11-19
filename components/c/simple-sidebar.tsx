@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, MoreVertical, Search, Users, Mail, Settings, LogOut } from "lucide-react";
+import { Plus, MoreVertical, Search, Users, Mail, Settings, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,6 +48,7 @@ export function SimpleSidebar({
   const router = useRouter();
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
   const [renameValue, setRenameValue] = React.useState("");
+  const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
   const startRename = (conv: Conversation) => {
     setRenamingId(conv.id);
@@ -67,8 +68,46 @@ export function SimpleSidebar({
     setRenameValue("");
   };
 
+  const handleConversationClick = (convId: string) => {
+    router.push(`/c/${convId}`);
+    setIsMobileOpen(false);
+  };
+
   return (
-    <div className="flex h-full w-64 flex-col bg-background border-r border-border">
+    <>
+      {/* Mobile Menu Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setIsMobileOpen(true)}
+        className="fixed top-4 left-4 z-40 md:hidden"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 md:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={cn(
+        "flex h-full w-64 flex-col bg-background border-r border-border transition-transform duration-300 ease-in-out z-50",
+        "fixed md:relative inset-y-0 left-0",
+        isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}>
+        {/* Mobile Close Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsMobileOpen(false)}
+          className="absolute top-3 right-3 md:hidden z-10"
+        >
+          <X className="h-5 w-5" />
+        </Button>
       {/* Header - New Chat Button */}
       <div className="p-3 border-b border-border">
         <Button
@@ -155,7 +194,7 @@ export function SimpleSidebar({
                 ) : (
                   <>
                     <button
-                      onClick={() => router.push(`/c/${conv.id}`)}
+                      onClick={() => handleConversationClick(conv.id)}
                       className="flex-1 text-left text-sm truncate"
                     >
                       {conv.title}
@@ -192,7 +231,7 @@ export function SimpleSidebar({
 
       {/* Footer - User Profile */}
       <div className="p-3 border-t border-border">
-        <DropdownMenu   >
+        <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -238,5 +277,6 @@ export function SimpleSidebar({
         </DropdownMenu>
       </div>
     </div>
+    </>
   );
 }

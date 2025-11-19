@@ -607,12 +607,21 @@ export function AssistantClient({ user }: AssistantClientProps) {
   };
 
   return (
-    <div className="flex h-screen bg-[#212121]">
+    <div className="flex h-screen bg-[#212121] overflow-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarExpanded && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsSidebarExpanded(false)}
+        />
+      )}
+      
       {/* Sidebar - ChatGPT dark theme */}
       <div
         className={cn(
-          "flex flex-col border-r border-neutral-800 bg-[#171717] transition-all duration-300 ease-in-out overflow-hidden",
-          isSidebarExpanded ? "w-64" : "w-16"
+          "flex flex-col border-r border-neutral-800 bg-[#171717] transition-all duration-300 ease-in-out overflow-hidden z-50",
+          "fixed md:relative inset-y-0 left-0",
+          isSidebarExpanded ? "w-64 translate-x-0" : "w-0 md:w-16 -translate-x-full md:translate-x-0"
         )}
       >
         <div className="flex h-full flex-col overflow-hidden">
@@ -763,7 +772,7 @@ export function AssistantClient({ user }: AssistantClientProps) {
           {/* AI Usage Stats - Minimal compact version */}
           {isSidebarExpanded && usageStats && (
             <div className="shrink-0 border-t border-neutral-800 p-3 bg-[#171717]">
-              <div className="bg-gradient-to-br from-amber-900/20 to-orange-900/20 rounded-lg p-2.5 border border-amber-800/30">
+              <div className="bg-linear-to-br from-amber-900/20 to-orange-900/20 rounded-lg p-2.5 border border-amber-800/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
                     <DollarSign className="h-3.5 w-3.5 text-amber-400" />
@@ -853,7 +862,9 @@ export function AssistantClient({ user }: AssistantClientProps) {
                     <span className="text-xs">Collapse</span>
                   </>
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <>
+                    <ChevronRight className="h-4 w-4" />
+                  </>
                 )}
               </Button>
             </div>
@@ -862,11 +873,32 @@ export function AssistantClient({ user }: AssistantClientProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col min-w-0 bg-[#212121]">
+      <div className="flex flex-1 flex-col min-w-0 bg-[#212121] w-full md:w-auto">
+        {/* Mobile Header with Menu Button */}
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-neutral-800 bg-[#171717]">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSidebarExpanded(true)}
+            className="text-neutral-400 hover:text-white"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            <span className="text-sm">Menu</span>
+          </Button>
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8 ring-1 ring-neutral-700">
+              {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
+              <AvatarFallback className="bg-neutral-700 text-neutral-200 text-sm font-medium">
+                {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        </div>
+        
         {/* Messages */}
         <div className="flex-1 overflow-hidden">
           <div ref={scrollRef} className="h-full overflow-y-auto">
-            <div className="mx-auto max-w-3xl px-4 py-8">
+            <div className="mx-auto max-w-3xl px-3 sm:px-4 py-4 sm:py-8">
               {messages.length === 0 ? (
                 <EmptyState onExampleClick={(text) => {
                   setLocalInput(text);
@@ -933,11 +965,11 @@ export function AssistantClient({ user }: AssistantClientProps) {
         </div>
 
         {/* Input Area - ChatGPT Style */}
-        <div className="bg-[#212121] pb-6">
-          <div className="mx-auto max-w-3xl px-4">
+        <div className="bg-[#212121] pb-3 sm:pb-6 px-3 sm:px-0">
+          <div className="mx-auto max-w-3xl sm:px-4">
             <form onSubmit={handleSubmit} className="relative">
-              <div className="flex items-center gap-2 bg-[#2f2f2f] rounded-full px-4 py-3 border border-neutral-700 focus-within:border-neutral-600 transition-colors">
-                <button type="button" className="text-neutral-400 hover:text-neutral-200 transition-colors">
+              <div className="flex items-center gap-2 bg-[#2f2f2f] rounded-2xl sm:rounded-full px-3 sm:px-4 py-2 sm:py-3 border border-neutral-700 focus-within:border-neutral-600 transition-colors">
+                <button type="button" className="text-neutral-400 hover:text-neutral-200 transition-colors hidden sm:block">
                   <Plus className="h-5 w-5" />
                 </button>
                 <Textarea
@@ -946,21 +978,21 @@ export function AssistantClient({ user }: AssistantClientProps) {
                   value={localInput}
                   onChange={(e) => setLocalInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Find emails, generate outreach messages, and more..."
+                  placeholder="Find emails, generate outreach messages..."
                   disabled={isLoading}
-                  className="flex-1 bg-transparent border-0 text-white placeholder:text-neutral-400 resize-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-[15px] leading-relaxed min-h-6 max-h-[200px]"
+                  className="flex-1 bg-transparent border-0 text-white placeholder:text-neutral-400 resize-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-sm sm:text-[15px] leading-relaxed min-h-6 max-h-[200px]"
                 />
                 <Button
                   type="submit"
                   disabled={!localInput.trim() || isLoading}
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8 rounded-full shrink-0 text-neutral-400 hover:text-white hover:bg-neutral-700"
+                  className="h-7 w-7 sm:h-8 sm:w-8 rounded-full shrink-0 text-neutral-400 hover:text-white hover:bg-neutral-700"
                 >
                   {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                   ) : (
-                    <Send className="h-5 w-5" />
+                    <Send className="h-4 w-4 sm:h-5 sm:w-5" />
                   )}
                 </Button>
               </div>
