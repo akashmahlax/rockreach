@@ -138,23 +138,27 @@ export function createAssistantTools({ orgId, userId }: ToolContext) {
         location: z.string().optional().describe("City, region, or country (e.g., 'San Francisco', 'New York')"),
         domain: z.string().optional().describe("Company email domain"),
         name: z.string().optional().describe("Person's name if known"),
-        limit: z.number().min(1).max(25).default(25).describe("Maximum number of leads to return (default: 25)"),
+        limit: z.number().min(10).max(150).default(100).describe("Maximum number of leads to return (default: 100)"),
       }),
       execute: async (input: {
         company?: string;
         title?: string;
         location?: string;
         domain?: string;
+        phone?: string;
+        email?: string;
         name?: string;
         limit?: number;
       }) => {
         try {
-          const limit = input.limit ?? 10;
+          const limit = input.limit ?? 100;
           const response = (await rrSearchPeople(orgId, {
             company: input.company,
             title: input.title,
             location: input.location,
             domain: input.domain,
+            phone: input.phone,
+            email: input.email,
             name: input.name,
             page_size: limit,
           })) as RocketReachSearchResponse;

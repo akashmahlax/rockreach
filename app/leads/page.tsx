@@ -3,11 +3,13 @@ import { redirect } from "next/navigation";
 import { NavbarWrapper } from "@/components/layout/navbar-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { getDb, Collections } from "@/lib/db";
+import { getLeadStats } from "@/models/Lead";
 import { ExportLeadsButton } from "@/components/export-leads-button";
 import { ImportLeadsButton } from "@/components/import-leads-button";
+import { LeadsTableClient } from "@/components/leads/leads-table-client";
+import { Phone, Mail } from "lucide-react";
 import type { ObjectId } from "mongodb";
 
 interface Lead {
@@ -17,6 +19,7 @@ interface Lead {
   company?: string;
   emails?: string[];
   phones?: string[];
+  linkedin?: string;
   orgId: string;
   createdAt: Date;
 }
@@ -34,10 +37,16 @@ export default async function MyLeadsPage() {
     redirect("/dashboard");
   }
 
-  // Get leads from database
+  // Get leads from database with optimized query
   const db = await getDb();
-  const cursor = db.collection(Collections.LEADS).find({ orgId });
-  const leads = (await cursor.toArray()) as Lead[];
+  const leads = (await db.collection(Collections.LEADS)
+    .find({ orgId })
+    .sort({ createdAt: -1 }) // Newest first
+    .limit(1000) // Limit for performance
+    .toArray()) as Lead[];
+
+  // Get statistics
+  const stats = await getLeadStats(orgId);
 
   return (
     <>
@@ -54,13 +63,6 @@ export default async function MyLeadsPage() {
 
         {/* Actions Bar */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex-1 max-w-md">
-            <Input
-              type="search"
-              placeholder="Search leads..."
-              className="bg-background"
-            />
-          </div>
           <div className="flex gap-3">
             <ImportLeadsButton />
             <ExportLeadsButton />
@@ -70,7 +72,7 @@ export default async function MyLeadsPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Enhanced Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
@@ -79,48 +81,48 @@ export default async function MyLeadsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{leads.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Saved contacts</p>
+              <div className="text-2xl font-bold">{stats.total.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-1">All contacts</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription className="text-xs font-medium">
-                With Email
+              <CardDescription className="text-xs font-medium flex items-center gap-1">
+                <Mail className="w-3 h-3" /> With Email
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {leads.filter((l) => l.emails && l.emails.length > 0).length}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Email contacts</p>
+              <div className="text-2xl font-bold">{stats.withEmail.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.emailCoverage.toFixed(1)}% coverage
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription className="text-xs font-medium">
-                With Phone
+              <CardDescription className="text-xs font-medium flex items-center gap-1">
+                <Phone className="w-3 h-3" /> With Phone
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {leads.filter((l) => l.phones && l.phones.length > 0).length}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Phone contacts</p>
+              <div className="text-2xl font-bold">{stats.withPhone.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.phoneCoverage.toFixed(1)}% coverage
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription className="text-xs font-medium">
-                In Lists
-              </CardDescription>
+              <CardDescription className="text-xs font-medium">Complete Profiles</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-1">Organized</p>
+              <div className="text-2xl font-bold">{stats.withBoth.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.completeCoverage.toFixed(1)}% with both
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -142,71 +144,7 @@ export default async function MyLeadsPage() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 text-sm font-medium">
-                        Name
-                      </th>
-                      <th className="text-left py-3 px-4 text-sm font-medium">
-                        Title
-                      </th>
-                      <th className="text-left py-3 px-4 text-sm font-medium">
-                        Company
-                      </th>
-                      <th className="text-left py-3 px-4 text-sm font-medium">
-                        Email
-                      </th>
-                      <th className="text-left py-3 px-4 text-sm font-medium">
-                        Phone
-                      </th>
-                      <th className="text-left py-3 px-4 text-sm font-medium">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leads.map((lead, index: number) => {
-                      const leadId = lead._id?.toString();
-
-                      return (
-                      <tr
-                        key={leadId ?? index}
-                        className="border-b hover:bg-muted/50 transition-colors"
-                      >
-                        <td className="py-3 px-4 text-sm font-medium">
-                          {lead.name || "N/A"}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-muted-foreground">
-                          {lead.title || "N/A"}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-muted-foreground">
-                          {lead.company || "N/A"}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-muted-foreground">
-                          {lead.emails?.[0] || "N/A"}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-muted-foreground">
-                          {lead.phones?.[0] || "N/A"}
-                        </td>
-                        <td className="py-3 px-4 text-sm">
-                          {leadId ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              asChild
-                            >
-                              <Link href={`/leads/${leadId}`}>View</Link>
-                            </Button>
-                          ) : null}
-                        </td>
-                      </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <LeadsTableClient initialLeads={leads} />
             )}
           </CardContent>
         </Card>

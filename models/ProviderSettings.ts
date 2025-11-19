@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 export interface AIProviderSettings {
   _id?: string;
   organizationId: string;
-  provider: 'openai' | 'anthropic' | 'google' | 'mistral' | 'groq' | 'deepseek' | 'cohere' | 'perplexity' | 'gemini';
+  provider: 'openai' | 'anthropic' | 'google' | 'mistral' | 'groq' | 'deepseek' | 'cohere' | 'perplexity' | 'gemini' | 'moonshot';
   name: string; // User-friendly name like "Production OpenAI"
   apiKey: string; // API key stored in plain text
   baseUrl?: string; // Optional custom endpoint

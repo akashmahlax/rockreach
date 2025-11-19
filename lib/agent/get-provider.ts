@@ -105,6 +105,21 @@ export async function getAIProvider(orgId: string, providerId?: string) {
       };
     }
 
+    case 'moonshot': {
+      // Moonshot AI uses OpenAI-compatible API
+      // Base URL: https://api.moonshot.cn/v1
+      // Models: moonshotai/kimi-k2, moonshotai/kimi-k2-0905, etc.
+      const moonshot = createOpenAI({ 
+        apiKey, 
+        baseURL: baseUrl || 'https://api.moonshot.cn/v1' 
+      });
+      return {
+        model: moonshot(defaultModel || 'moonshotai/kimi-k2'),
+        config: config || {},
+        providerInfo: { type: providerType, model: defaultModel },
+      };
+    }
+
     default:
       throw new Error(`Unsupported AI provider: ${providerType}`);
   }

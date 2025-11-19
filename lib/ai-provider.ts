@@ -78,6 +78,15 @@ export function createProviderInstance(config: AIProviderSettings) {
         baseURL: baseUrl || 'https://api.perplexity.ai',
       });
 
+    case 'moonshot':
+      // Moonshot AI (Kimi) uses OpenAI-compatible API
+      // Base URL: https://api.moonshot.cn/v1
+      // Models: moonshotai/kimi-k2, moonshotai/kimi-k2-0905, etc.
+      return createOpenAI({
+        apiKey,
+        baseURL: baseUrl || 'https://api.moonshot.cn/v1',
+      });
+
     default:
       throw new Error(`Unsupported provider: ${provider}`);
   }

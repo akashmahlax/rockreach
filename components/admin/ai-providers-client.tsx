@@ -21,7 +21,83 @@ const PROVIDER_OPTIONS = [
   { value: 'deepseek', label: 'DeepSeek', defaultModel: 'deepseek-chat' },
   { value: 'cohere', label: 'Cohere', defaultModel: 'command-r-plus' },
   { value: 'perplexity', label: 'Perplexity', defaultModel: 'sonar-pro' },
+  { value: 'moonshot', label: 'Moonshot AI (Kimi)', defaultModel: 'moonshotai/kimi-k2' },
 ] as const;
+
+// All available models by provider (as of Nov 2025)
+const PROVIDER_MODELS: Record<string, Array<{ value: string; label: string; description: string }>> = {
+  openai: [
+    { value: 'gpt-5.1', label: 'GPT-5.1 (Latest - Nov 2025)', description: 'Best for complex tasks, 100+ leads' },
+    { value: 'gpt-5.1-chat-latest', label: 'GPT-5.1 Chat Latest', description: 'Latest chat-optimized version' },
+    { value: 'gpt-5', label: 'GPT-5', description: 'Previous generation, excellent reasoning' },
+    { value: 'gpt-4o', label: 'GPT-4o (Recommended)', description: 'Fast, cost-effective, handles 100 leads well' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Faster, lower cost, good for simple tasks' },
+    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', description: 'Previous generation, reliable' },
+    { value: 'gpt-4', label: 'GPT-4', description: 'Older but reliable' },
+    { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', description: 'Fastest, lowest cost' },
+  ],
+  anthropic: [
+    { value: 'claude-3-7-sonnet-latest', label: 'Claude 3.7 Sonnet (Latest)', description: 'Latest Claude model, best performance' },
+    { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Excellent for complex reasoning, 100+ leads' },
+    { value: 'claude-3-5-haiku-latest', label: 'Claude 3.5 Haiku', description: 'Fast and cost-effective' },
+    { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus', description: 'Most capable, highest cost' },
+    { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet', description: 'Previous generation' },
+    { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku', description: 'Fastest Claude model' },
+  ],
+  google: [
+    { value: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash (Latest)', description: 'Latest, fastest Gemini model' },
+    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', description: 'Best for complex tasks, 100+ leads' },
+    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', description: 'Fast and efficient' },
+    { value: 'gemini-1.0-pro', label: 'Gemini 1.0 Pro', description: 'Previous generation' },
+  ],
+  gemini: [
+    { value: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash (Latest)', description: 'Latest, fastest Gemini model' },
+    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', description: 'Best for complex tasks, 100+ leads' },
+    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', description: 'Fast and efficient' },
+    { value: 'gemini-1.0-pro', label: 'Gemini 1.0 Pro', description: 'Previous generation' },
+  ],
+  mistral: [
+    { value: 'mistral-large-latest', label: 'Mistral Large (Latest)', description: 'Most capable Mistral model' },
+    { value: 'mistral-medium-latest', label: 'Mistral Medium', description: 'Balanced performance' },
+    { value: 'mistral-small-latest', label: 'Mistral Small', description: 'Fast and efficient' },
+    { value: 'pixtral-12b-2409', label: 'Pixtral 12B', description: 'Multimodal model' },
+  ],
+  groq: [
+    { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Latest)', description: 'Latest Llama, excellent for 100+ leads' },
+    { value: 'llama-3.1-70b-versatile', label: 'Llama 3.1 70B', description: 'Previous generation' },
+    { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant', description: 'Fast, lower cost' },
+    { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', description: 'Mixture of experts' },
+  ],
+  deepseek: [
+    { value: 'deepseek-chat', label: 'DeepSeek Chat', description: 'Main chat model' },
+    { value: 'deepseek-coder', label: 'DeepSeek Coder', description: 'Optimized for coding' },
+    { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner', description: 'Enhanced reasoning' },
+  ],
+  cohere: [
+    { value: 'command-r-plus', label: 'Command R+', description: 'Most capable Cohere model' },
+    { value: 'command-r', label: 'Command R', description: 'Balanced performance' },
+    { value: 'command', label: 'Command', description: 'Previous generation' },
+  ],
+  perplexity: [
+    { value: 'sonar-pro', label: 'Sonar Pro', description: 'Best for research and analysis' },
+    { value: 'sonar', label: 'Sonar', description: 'Standard version' },
+    { value: 'sonar-small', label: 'Sonar Small', description: 'Fast and efficient' },
+  ],
+  moonshot: [
+    { value: 'moonshotai/kimi-k2', label: 'Kimi K2 (Latest)', description: 'Latest Kimi model, best for 100+ leads' },
+    { value: 'moonshotai/kimi-k2-0905', label: 'Kimi K2 0905', description: 'Agentic coding, 256K context' },
+    { value: 'moonshotai/kimi-k2-thinking', label: 'Kimi K2 Thinking', description: 'Deep reasoning, optimized' },
+    { value: 'moonshotai/kimi-k2-thinking-turbo', label: 'Kimi K2 Thinking Turbo', description: 'Fast reasoning, low latency' },
+    { value: 'moonshot-v1-8k', label: 'Moonshot v1 8K', description: 'Previous generation' },
+    { value: 'moonshot-v1-32k', label: 'Moonshot v1 32K', description: 'Extended context' },
+    { value: 'moonshot-v1-128k', label: 'Moonshot v1 128K', description: 'Very long context' },
+  ],
+};
+
+// Helper function to get models for a provider
+const getModelsForProvider = (provider: string) => {
+  return PROVIDER_MODELS[provider] || [];
+};
 
 interface ProviderWithCredentials extends Omit<AIProviderSettings, '_id'> {
   _id: string;
@@ -242,13 +318,39 @@ export default function AIProvidersClient() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="defaultModel">Default Model *</Label>
-                  <Input
-                    id="defaultModel"
-                    value={formData.defaultModel}
-                    onChange={(e) => setFormData({ ...formData, defaultModel: e.target.value })}
-                    placeholder="e.g., gpt-4o"
-                    required
-                  />
+                  {getModelsForProvider(formData.provider || '').length > 0 ? (
+                    <Select
+                      value={formData.defaultModel}
+                      onValueChange={(value) => setFormData({ ...formData, defaultModel: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={`Select ${getProviderLabel(formData.provider || '')} model`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getModelsForProvider(formData.provider || '').map((model) => (
+                          <SelectItem key={model.value} value={model.value}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{model.label}</span>
+                              <span className="text-xs text-muted-foreground">{model.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id="defaultModel"
+                      value={formData.defaultModel}
+                      onChange={(e) => setFormData({ ...formData, defaultModel: e.target.value })}
+                      placeholder="e.g., gpt-4o"
+                      required
+                    />
+                  )}
+                  {(formData.provider === 'openai' || formData.provider === 'anthropic' || formData.provider === 'moonshot') && (
+                    <p className="text-xs text-muted-foreground">
+                      💡 <strong>For 100 leads:</strong> Use latest models (GPT-5.1, Claude 3.7, Kimi K2) - they handle large outputs best
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -356,12 +458,38 @@ export default function AIProvidersClient() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor={`defaultModel-${provider._id}`}>Default Model *</Label>
-                      <Input
-                        id={`defaultModel-${provider._id}`}
-                        value={formData.defaultModel}
-                        onChange={(e) => setFormData({ ...formData, defaultModel: e.target.value })}
-                        required
-                      />
+                      {getModelsForProvider(formData.provider || '').length > 0 ? (
+                        <Select
+                          value={formData.defaultModel}
+                          onValueChange={(value) => setFormData({ ...formData, defaultModel: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={`Select ${getProviderLabel(formData.provider || '')} model`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getModelsForProvider(formData.provider || '').map((model) => (
+                              <SelectItem key={model.value} value={model.value}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{model.label}</span>
+                                  <span className="text-xs text-muted-foreground">{model.description}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          id={`defaultModel-${provider._id}`}
+                          value={formData.defaultModel}
+                          onChange={(e) => setFormData({ ...formData, defaultModel: e.target.value })}
+                          required
+                        />
+                      )}
+                      {(formData.provider === 'openai' || formData.provider === 'anthropic' || formData.provider === 'moonshot') && (
+                        <p className="text-xs text-muted-foreground">
+                          💡 <strong>For 100 leads:</strong> Use latest models (GPT-5.1, Claude 3.7, Kimi K2) - they handle large outputs best
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
