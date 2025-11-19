@@ -63,7 +63,7 @@ export async function Hero() {
           ) : (
             
               <Link href={user.role === "admin" ? "/admin" : "/dashboard"} >
-                <Button className="px-8 py-6  rounded-full bg-slate-200  text-slate-900 text-4xl font-medium font-sans">
+                <Button className="px-8 py-6  rounded-full bg-slate-200  text-slate-900 text-base font-medium font-sans">
                   Go to Dashboard
                 </Button>               
               </Link>

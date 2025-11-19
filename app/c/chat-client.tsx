@@ -16,14 +16,9 @@ import { UIMessage } from "ai";
 import { MessageBubble } from "@/components/c/message-bubble";
 import { EmptyState } from "@/components/c/empty-state";
 import { LoadingOverlay } from "@/components/c/loading-overlay";
+import { ChatSkeleton, ResponseLoadingSkeleton } from "@/components/c/chat-skeleton";
 import { fetchWithRetry } from "@/lib/fetch-with-retry";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/c/app-sidebar";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SimpleSidebar } from "@/components/c/simple-sidebar";
 
 interface ChatClientProps {
   conversationId: string | null;
@@ -50,17 +45,6 @@ interface Conversation {
 interface ThinkingStep {
   label: string;
   status: "pending" | "active" | "complete";
-}
-
-interface UsageStats {
-  period: string;
-  totalTokens: number;
-  totalCalls: number;
-  successCalls: number;
-  errorCalls: number;
-  avgDurationMs: number;
-  estimatedCost: string;
-  costPerCall: string;
 }
 
 // Dynamic thinking steps that update based on backend activity
@@ -378,45 +362,11 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
-  // Show dynamic thinking steps when loading
+  // Cleanup thinking steps when loading completes
   useEffect(() => {
-    if (isLoading) {
-      const lastMsg =
-        messages.length > 0 ? messages[messages.length - 1] : undefined;
-      const dynamicSteps = getThinkingSteps(lastMsg);
-
-      setThinkingSteps(
-        dynamicSteps.map((step, idx) => ({
-          label: step.label,
-          status: idx === 0 ? "active" : "pending",
-        })),
-      );
-
-      let stepIdx = 0;
-      const stepInterval = setInterval(() => {
-        stepIdx++;
-        if (stepIdx < dynamicSteps.length) {
-          setThinkingSteps((steps) =>
-            steps.map((step, idx) => ({
-              ...step,
-              status:
-                idx < stepIdx
-                  ? "complete"
-                  : idx === stepIdx
-                    ? "active"
-                    : "pending",
-            })),
-          );
-        } else {
-          clearInterval(stepInterval);
-        }
-      }, 800); // Slower progression for better UX
-      return () => clearInterval(stepInterval);
-    } else {
+    if (!isLoading) {
       setThinkingSteps([]);
     }
-    // Only depend on isLoading, not messages to prevent infinite loop
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
   // Load conversations from MongoDB on mount
@@ -656,8 +606,8 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   };
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <AppSidebar
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      <SimpleSidebar
         user={user}
         conversations={conversations}
         activeConvId={activeConvId}
@@ -666,34 +616,15 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
         onDeleteConversation={deleteConversation}
         onRenameConversation={renameConversation}
       />
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 h-[calc(100vh-3.5rem)] overflow-hidden relative">
-          {/* Conversation Switching Overlay */}
-          {isSwitchingConversation && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-4 w-full max-w-md px-6">
-                <div className="space-y-3 w-full">
-                  <Skeleton className="h-4 w-3/4 mx-auto" />
-                  <Skeleton className="h-4 w-1/2 mx-auto" />
-                </div>
-                <div className="space-y-2 w-full mt-4">
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                </div>
-              </div>
-            </div>
-          )}
-
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col gap-4 p-4 h-full overflow-hidden relative">
           {/* Messages */}
           <div className="flex-1 overflow-hidden">
             <div ref={scrollRef} className="h-full overflow-y-auto">
               <div className="mx-auto max-w-3xl px-4 py-8">
-                {messages.length === 0 ? (
+                {isSwitchingConversation ? (
+                  <ChatSkeleton />
+                ) : messages.length === 0 && !isLoading ? (
                   <EmptyState
                     onExampleClick={(text) => {
                       setLocalInput(text);
@@ -729,13 +660,12 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                       );
                     })}
                   </div>
-                )}
+                )
+                }
 
-                <LoadingOverlay
-                  isLoading={isLoading}
-                  thinkingSteps={thinkingSteps}
-                  onStop={stop}
-                />
+                {isLoading && messages.length > 0 && (
+                  <ResponseLoadingSkeleton />
+                )}
 
                 {/* Error State - only show for real failures, not SDK /responses quirks */}
                 {error &&
@@ -776,7 +706,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
           <div className="bg-background pb-6 pt-2">
             <div className="mx-auto max-w-3xl px-4">
               <form onSubmit={handleSubmit} className="relative">
-                <div className="flex items-end gap-2 bg-slate-800 rounded-full px-8 py-6 border-none transition-all">
+                <div className="flex items-end gap-2 dark:bg-slate-800 bg-slate-100 rounded-full px-8 py-6 border-none transition-all">
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-foreground transition-colors pb-1.5"
@@ -789,9 +719,9 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
                     value={localInput}
                     onChange={(e) => setLocalInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask anything..."
+                    placeholder="Give me 25 app development clients from san francisco..."
                     disabled={isLoading}
-                    className="flex-1 bg-transparent border-0 text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-[15px] leading-relaxed min-h-6 max-h-[200px] py-1.5"
+                    className="flex-1 bg-transparent border-none text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-[15px] leading-relaxed min-h-6 max-h-[200px] py-1.5"
                   />
                   <Button
                     type="submit"
@@ -834,7 +764,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
             </div>
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+    </div>
   );
 }

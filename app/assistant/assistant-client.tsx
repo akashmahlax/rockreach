@@ -611,19 +611,19 @@ export function AssistantClient({ user }: AssistantClientProps) {
       {/* Sidebar - ChatGPT dark theme */}
       <div
         className={cn(
-          "flex flex-col border-r border-neutral-800 bg-[#171717] transition-all duration-300 ease-in-out",
+          "flex flex-col border-r border-neutral-800 bg-[#171717] transition-all duration-300 ease-in-out overflow-hidden",
           isSidebarExpanded ? "w-64" : "w-16"
         )}
       >
-        <div className="flex h-full flex-col">
+        <div className="flex h-full flex-col overflow-hidden">
           {/* New Chat Button */}
-          <div className="p-3 border-b border-neutral-800">
+          <div className="shrink-0 p-3 border-b border-neutral-800">
             <Button
               onClick={createNewConversation}
               size="sm"
               variant="ghost"
               className={cn(
-                "w-full gap-2 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all",
+                "w-full gap-2 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all rounded-lg",
                 isSidebarExpanded ? "justify-start px-3" : "justify-center px-2"
               )}
             >
@@ -642,7 +642,7 @@ export function AssistantClient({ user }: AssistantClientProps) {
                 className={cn(
                   "group/item relative rounded-lg transition-all",
                   activeConvId === conv.id
-                    ? "bg-neutral-800"
+                    ? "bg-neutral-800 shadow-sm"
                     : "hover:bg-neutral-800/50"
                 )}
               >
@@ -762,17 +762,17 @@ export function AssistantClient({ user }: AssistantClientProps) {
 
           {/* AI Usage Stats - Minimal compact version */}
           {isSidebarExpanded && usageStats && (
-            <div className="border-t border-slate-200 p-3">
-              <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-lg p-2.5 border border-amber-200/50">
+            <div className="shrink-0 border-t border-neutral-800 p-3 bg-[#171717]">
+              <div className="bg-gradient-to-br from-amber-900/20 to-orange-900/20 rounded-lg p-2.5 border border-amber-800/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
-                    <DollarSign className="h-3.5 w-3.5 text-amber-600" />
-                    <span className="text-xs font-medium text-slate-700">AI Usage</span>
+                    <DollarSign className="h-3.5 w-3.5 text-amber-400" />
+                    <span className="text-xs font-medium text-neutral-300">AI Usage</span>
                   </div>
                   <select
                     value={usagePeriod}
                     onChange={(e) => setUsagePeriod(e.target.value as "24h" | "7d" | "30d")}
-                    className="text-xs border border-amber-200 rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+                    className="text-xs border border-neutral-700 rounded px-1.5 py-0.5 bg-neutral-800 text-neutral-300 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
                   >
                     <option value="24h">24h</option>
                     <option value="7d">7d</option>
@@ -781,14 +781,14 @@ export function AssistantClient({ user }: AssistantClientProps) {
                 </div>
                 {loadingStats ? (
                   <div className="flex items-center justify-center py-2">
-                    <Loader2 className="h-3 w-3 animate-spin text-amber-500" />
+                    <Loader2 className="h-3 w-3 animate-spin text-amber-400" />
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-amber-900">
+                    <span className="text-lg font-bold text-amber-300">
                       ${usageStats.estimatedCost}
                     </span>
-                    <span className="text-xs text-slate-600">
+                    <span className="text-xs text-neutral-400">
                       {usageStats.totalCalls} calls
                     </span>
                   </div>
@@ -797,38 +797,44 @@ export function AssistantClient({ user }: AssistantClientProps) {
             </div>
           )}
 
-          {/* Bottom Section - User and Expand Button */}
-          <div className="border-t border-neutral-800">
+          {/* Bottom Section - User and Expand Button - Always visible */}
+          <div className="shrink-0 border-t border-neutral-800 bg-[#171717]">
             {/* User Info */}
             {user.name && (
               <div className="p-3 flex items-center justify-between gap-2">
                 {isSidebarExpanded ? (
                   <>
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Avatar className="h-8 w-8 shrink-0">
+                      <Avatar className="h-8 w-8 shrink-0 ring-1 ring-neutral-700">
                         {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
-                        <AvatarFallback className="bg-neutral-700 text-neutral-200 text-sm">
+                        <AvatarFallback className="bg-neutral-700 text-neutral-200 text-sm font-medium">
                           {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-neutral-200 truncate">{user.name}</p>
+                        {user.email && (
+                          <p className="text-xs text-neutral-500 truncate">{user.email}</p>
+                        )}
                       </div>
                       <Link
                         href="/settings"
-                        className="shrink-0 p-1.5 hover:bg-neutral-800 rounded-lg transition-colors"
+                        className="shrink-0 p-1.5 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-white"
+                        title="Settings"
                       >
-                        <Settings className="h-4 w-4 text-neutral-400" />
+                        <Settings className="h-4 w-4" />
                       </Link>
                     </div>
                   </>
                 ) : (
-                  <Avatar className="h-8 w-8 mx-auto">
-                    {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
-                    <AvatarFallback className="bg-neutral-700 text-neutral-200 text-sm">
-                      {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="w-full flex justify-center">
+                    <Avatar className="h-8 w-8 ring-1 ring-neutral-700">
+                      {user.image && <AvatarImage src={user.image} alt={user.name || ""} />}
+                      <AvatarFallback className="bg-neutral-700 text-neutral-200 text-sm font-medium">
+                        {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                 )}
               </div>
             )}
@@ -839,7 +845,7 @@ export function AssistantClient({ user }: AssistantClientProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-                className="w-full hover:bg-neutral-800 text-neutral-400 hover:text-white"
+                className="w-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors rounded-lg"
               >
                 {isSidebarExpanded ? (
                   <>

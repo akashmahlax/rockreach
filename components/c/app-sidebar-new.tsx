@@ -61,7 +61,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onRenameConversation: (id: string, title: string) => void;
 }
 
-export function AppSidebar({
+export function AppSidebarNew({
   user,
   conversations,
   activeConvId,
@@ -94,7 +94,7 @@ export function AppSidebar({
   }
 
   return (
-    <Sidebar collapsible="icon" {...props} className={cn("flex flex-col h-full overflow-visible", props.className)}>
+    <Sidebar collapsible="icon" {...props} className={cn("flex flex-col h-full", props.className)}>
       <SidebarHeader className="shrink-0">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -166,7 +166,7 @@ export function AppSidebar({
                           autoFocus
                         />
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveRename}>
-                          <Plus className="h-3 w-3 rotate-45" /> {/* Check icon replacement */}
+                          <Plus className="h-3 w-3 rotate-45" />
                         </Button>
                       </div>
                     ) : (
@@ -181,7 +181,7 @@ export function AppSidebar({
                       </SidebarMenuButton>
                     )}
                     {!renamingId && (
-                      <DropdownMenu modal={false}>
+                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <SidebarMenuAction showOnHover>
                             <MoreVertical className="h-4 w-4" />
@@ -192,9 +192,6 @@ export function AppSidebar({
                           className="w-48"
                           side="right"
                           align="start"
-                          sideOffset={4}
-                          avoidCollisions={true}
-                          collisionPadding={8}
                         >
                           <DropdownMenuItem onClick={() => startRename(conv)}>
                             <Edit3 className="mr-2 h-4 w-4" />
@@ -217,68 +214,63 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="shrink-0 border-t border-sidebar-border mt-auto bg-sidebar overflow-visible relative z-50">
-        <SidebarMenu>
-          <SidebarMenuItem className="relative z-50">
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/50 transition-colors"
-                >
-                  <Avatar className="h-8 w-8 rounded-lg ring-1 ring-sidebar-border">
-                    <AvatarImage src={user.image || ""} alt={user.name || ""} />
-                    <AvatarFallback className="rounded-lg bg-sidebar-accent text-sidebar-accent-foreground font-medium">
-                      {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                    <span className="truncate font-semibold">{user.name || "User"}</span>
-                    <span className="truncate text-xs text-muted-foreground">{user.email || ""}</span>
-                  </div>
-                  <MoreVertical className="ml-auto size-4 shrink-0" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="top"
-                align="end"
-                sideOffset={8}
-                alignOffset={0}
-                avoidCollisions={true}
-                collisionPadding={8}
-                onCloseAutoFocus={(e) => e.preventDefault()}
+      <SidebarFooter className="shrink-0 border-t border-sidebar-border bg-sidebar">
+        <div className="p-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-sidebar-accent transition-colors group">
+                <Avatar className="h-8 w-8 rounded-lg ring-1 ring-sidebar-border shrink-0">
+                  <AvatarImage src={user.image || ""} alt={user.name || ""} />
+                  <AvatarFallback className="rounded-lg bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                    {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{user.name || "User"}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.email || ""}</p>
+                </div>
+                <MoreVertical className="h-4 w-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-56 rounded-lg"
+              side="top"
+              align="end"
+              sideOffset={8}
+              alignOffset={0}
+              avoidCollisions={true}
+              collisionPadding={8}
+            >
+              <DropdownMenuItem asChild>
+                <Link href="/help" className="flex items-center w-full cursor-pointer">
+                  <span className="mr-2">❓</span>
+                  Help & Support
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/shortcuts" className="flex items-center w-full cursor-pointer">
+                  <span className="mr-2">⌨️</span>
+                  Keyboard Shortcuts
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="flex items-center w-full cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => window.location.href = "/api/auth/signout"}
+                className="text-destructive focus:text-destructive cursor-pointer"
               >
-                  <DropdownMenuItem asChild>
-                    <Link href="/help" className="flex items-center w-full cursor-pointer">
-                      <span className="mr-2">❓</span>
-                      Help & Support
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/shortcuts" className="flex items-center w-full cursor-pointer">
-                      <span className="mr-2">⌨️</span>
-                      Keyboard Shortcuts
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings" className="flex items-center w-full cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => window.location.href = "/api/auth/signout"}
-                    className="text-destructive focus:text-destructive cursor-pointer"
-                  >
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
 }
+
