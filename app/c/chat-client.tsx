@@ -5,34 +5,25 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  ChevronLeft,
-  ChevronRight,
-  DollarSign,
-  Edit3,
   Loader2,
-  MoreVertical,
   Plus,
   Send,
-  Settings,
-  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat } from "@ai-sdk/react";
 import { UIMessage } from "ai";
-import Link from "next/link";
 import { MessageBubble } from "@/components/c/message-bubble";
 import { EmptyState } from "@/components/c/empty-state";
 import { LoadingOverlay } from "@/components/c/loading-overlay";
 import { fetchWithRetry } from "@/lib/fetch-with-retry";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/c/app-sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ChatClientProps {
   conversationId: string | null;
@@ -121,15 +112,9 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   const [activeConvId, setActiveConvId] = useState<string | null>(
     conversationId,
   );
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
-  const [renamingConvId, setRenamingConvId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState("");
-  const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
-  const [usagePeriod, setUsagePeriod] = useState<"24h" | "7d" | "30d">("30d");
-  const [loadingStats, setLoadingStats] = useState(false);
   // Track conversation switching for loading overlay
   const [isSwitchingConversation, setIsSwitchingConversation] = useState(false);
   const [isConversationsLoading, setIsConversationsLoading] = useState(true);
@@ -442,22 +427,6 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
 
   // Conversations are now auto-saved to MongoDB via API calls
 
-  // Fetch usage stats
-  const fetchUsageStats = async (period: string) => {
-    setLoadingStats(true);
-    try {
-      const res = await fetch(`/api/assistant/usage?period=${period}`);
-      if (res.ok) {
-        const data = await res.json();
-        setUsageStats(data);
-      }
-    } catch (error) {
-      console.error("Error fetching usage stats:", error);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
   // Fetch conversations from MongoDB
   const fetchConversations = async () => {
     setIsConversationsLoading(true);
@@ -478,11 +447,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   };
 
   // Save conversation to MongoDB
-  // Load usage stats on mount and when period changes
-  useEffect(() => {
-    fetchUsageStats(usagePeriod);
-  }, [usagePeriod]);
-
+  
   const createNewConversation = () => {
     // Redirect to API route that creates conversation in MongoDB first
     window.location.href = "/api/assistant/new-conversation";
@@ -526,47 +491,27 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     });
   };
 
-  const startRenameConversation = (id: string) => {
-    const conv = conversations.find((c) => c.id === id);
-    if (conv) {
-      setRenamingConvId(id);
-      setRenameValue(conv.title);
-    }
-  };
-
-  const saveRenameConversation = async () => {
-    if (!renamingConvId || !renameValue.trim()) {
-      setRenamingConvId(null);
-      return;
-    }
-
+  const renameConversation = async (id: string, title: string) => {
     try {
       await fetch("/api/assistant/conversations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: renamingConvId,
-          title: renameValue.trim(),
+          id,
+          title,
         }),
       });
 
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === renamingConvId ? { ...c, title: renameValue.trim() } : c,
+          c.id === id ? { ...c, title } : c,
         ),
       );
-      setRenamingConvId(null);
+      toast.success("Conversation renamed");
     } catch (error) {
       console.error("Error renaming conversation:", error);
       toast.error("Failed to rename conversation");
     }
-    setRenameValue("");
-    toast.success("Conversation renamed");
-  };
-
-  const cancelRenameConversation = () => {
-    setRenamingConvId(null);
-    setRenameValue("");
   };
 
   // Helper function to generate smart title based on input
@@ -694,18 +639,6 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     }
   };
 
-  const startEdit = (messageId: string) => {
-    const message = messages.find((m) => m.id === messageId);
-    if (message) {
-      const textContent = message.parts
-        .filter((p) => p.type === "text")
-        .map((p) => ("text" in p ? p.text : "") || "")
-        .join(" ");
-      setEditingMessageId(messageId);
-      setEditContent(textContent);
-    }
-  };
-
   const saveEdit = () => {
     if (!editingMessageId) return;
     // Note: Editing messages requires custom implementation
@@ -723,443 +656,185 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   };
 
   return (
-    <div className="flex h-screen bg-[#212121]">
-      {/* Sidebar - Dark design matching ChatGPT */}
-      <div
-        className={cn(
-          "flex flex-col border-r border-neutral-700/50 bg-[#212121] transition-all duration-300 ease-in-out",
-          isSidebarExpanded ? "w-72" : "w-16",
-        )}
-      >
-        <div className="flex h-full flex-col">
-          {/* New Chat Button */}
-          <div className="p-3 border-b border-neutral-700/50">
-            <Button
-              onClick={createNewConversation}
-              size="sm"
-              className={cn(
-                "w-full gap-2 bg-neutral-800/40 hover:bg-neutral-700/60 text-neutral-200 transition-all font-medium rounded-lg border border-neutral-700/50",
-                isSidebarExpanded
-                  ? "justify-start px-4 py-2.5"
-                  : "justify-center px-2 py-2.5",
-              )}
-            >
-              <Plus className="h-4 w-4 shrink-0" />
-              {isSidebarExpanded && (
-                <span className="text-sm font-medium">New Chat</span>
-              )}
-            </Button>
+    <SidebarProvider defaultOpen={true}>
+      <AppSidebar
+        user={user}
+        conversations={conversations}
+        activeConvId={activeConvId}
+        isLoadingConversations={isConversationsLoading}
+        onNewConversation={createNewConversation}
+        onDeleteConversation={deleteConversation}
+        onRenameConversation={renameConversation}
+      />
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
           </div>
-
-          {/* Conversations List - Always visible, no collapsible */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <ScrollArea className="h-full px-3 py-3">
-              <div className="space-y-1.5 pb-2">
-                {isConversationsLoading ? (
-                  <div className="space-y-1.5">
-                    {Array.from({ length: 5 }).map((_, idx) => (
-                      <div
-                        key={`skeleton-${idx}`}
-                        className="h-[58px] animate-pulse rounded-lg bg-neutral-800/50"
-                      />
-                    ))}
-                  </div>
-                ) : conversations.length === 0 ? (
-                  <div className="text-center text-sm text-neutral-400 py-6">
-                    No conversations yet.
-                  </div>
-                ) : (
-                  <>
-                    {conversations.map((conv) => (
-                      <div
-                        key={conv.id}
-                        className={cn(
-                          "group/item relative rounded-lg transition-all cursor-pointer",
-                          activeConvId === conv.id
-                            ? "bg-neutral-800 border border-neutral-700"
-                            : "hover:bg-neutral-800/50 border border-transparent",
-                        )}
-                      >
-                        {renamingConvId === conv.id ? (
-                          <div className="px-3 py-2.5">
-                            <input
-                              type="text"
-                              value={renameValue}
-                              onChange={(e) => setRenameValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveRenameConversation();
-                                if (e.key === "Escape")
-                                  cancelRenameConversation();
-                              }}
-                              className="w-full px-3 py-2 text-sm bg-neutral-700 border border-neutral-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-neutral-500 text-white"
-                              autoFocus
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div className="flex gap-2 mt-2">
-                              <Button
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  saveRenameConversation();
-                                }}
-                                className="h-7 px-3 text-xs bg-neutral-700 hover:bg-neutral-600 text-white font-medium rounded-lg"
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  cancelRenameConversation();
-                                }}
-                                className="h-7 px-3 text-xs text-neutral-300 hover:bg-neutral-700 rounded-lg"
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => router.push(`/c/${conv.id}`)}
-                              className={cn(
-                                "w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors min-w-0",
-                                activeConvId === conv.id
-                                  ? "text-white font-medium"
-                                  : "text-neutral-300 font-normal",
-                              )}
-                            >
-                              {!isSidebarExpanded ? (
-                                <div className="w-full flex justify-center">
-                                  <div className="h-2 w-2 rounded-full bg-neutral-500" />
-                                </div>
-                              ) : (
-                                <div className="flex-1 min-w-0">
-                                  <span className="block truncate leading-snug">
-                                    {conv.title}
-                                  </span>
-                                  <span className="text-xs text-neutral-500 mt-0.5 block">
-                                    {new Date(
-                                      conv.createdAt,
-                                    ).toLocaleDateString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </span>
-                                </div>
-                              )}
-                            </button>
-                            {isSidebarExpanded && (
-                              <div className="absolute top-1.5 right-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                      }}
-                                    >
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="w-40"
-                                  >
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        startRenameConversation(conv.id);
-                                      }}
-                                    >
-                                      <Edit3 className="h-4 w-4 mr-2" />
-                                      Rename
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        deleteConversation(conv.id);
-                                      }}
-                                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
-
-          {/* AI Usage Stats - Minimal compact version */}
-          {/*{isSidebarExpanded && usageStats && (
-            <div className="border-t border-slate-200 p-3">
-              <div className="bg-linear-to-br from-slate-50 to-orange-50 rounded-lg p-2.5 border border-slate-200/50">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <DollarSign className="h-3.5 w-3.5 text-slate-600" />
-                    <span className="text-xs font-medium text-slate-700">
-                      AI Usage
-                    </span>
-                  </div>
-                  <select
-                    value={usagePeriod}
-                    onChange={(e) =>
-                      setUsagePeriod(e.target.value as "24h" | "7d" | "30d")
-                    }
-                    className="text-xs border border-slate-200 rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
-                  >
-                    <option value="24h">24h</option>
-                    <option value="7d">7d</option>
-                    <option value="30d">30d</option>
-                  </select>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 h-[calc(100vh-3.5rem)] overflow-hidden relative">
+          {/* Conversation Switching Overlay */}
+          {isSwitchingConversation && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4 w-full max-w-md px-6">
+                <div className="space-y-3 w-full">
+                  <Skeleton className="h-4 w-3/4 mx-auto" />
+                  <Skeleton className="h-4 w-1/2 mx-auto" />
                 </div>
-                {loadingStats ? (
-                  <div className="flex items-center justify-center py-2">
-                    <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-base font-semibold text-slate-900">
-                      ${usageStats.estimatedCost}
-                    </span>
-                    <span className="text-xs text-slate-600">
-                      {usageStats.totalCalls} calls
-                    </span>
-                  </div>
-                )}
+                <div className="space-y-2 w-full mt-4">
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                </div>
               </div>
             </div>
-          )}*/}
+          )}
 
-          {/* Bottom Section - User and Expand Button */}
-          <div className="border-t border-neutral-700/50">
-            {/* User Info */}
-            {user.name && (
-              <div className="p-3 flex items-center justify-between gap-2">
-                {isSidebarExpanded ? (
-                  <>
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Avatar className="h-8 w-8 shrink-0">
-                        {user.image && (
-                          <AvatarImage src={user.image} alt={user.name || ""} />
-                        )}
-                        <AvatarFallback className="bg-neutral-700 text-neutral-200 text-sm">
-                          {user.name?.charAt(0).toUpperCase() ||
-                            user.email?.charAt(0).toUpperCase() ||
-                            "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-neutral-200 truncate">
-                          {user.name}
-                        </p>
-                        <p className="text-xs text-neutral-500 truncate">
-                          {user.email}
-                        </p>
-                      </div>
-                      <Link
-                        href="/settings"
-                        className="shrink-0 p-1.5 hover:bg-neutral-800 rounded-lg transition-colors"
-                      >
-                        <Settings className="h-4 w-4 text-neutral-400" />
-                      </Link>
-                    </div>
-                  </>
+          {/* Messages */}
+          <div className="flex-1 overflow-hidden">
+            <div ref={scrollRef} className="h-full overflow-y-auto">
+              <div className="mx-auto max-w-3xl px-4 py-8">
+                {messages.length === 0 ? (
+                  <EmptyState
+                    onExampleClick={(text) => {
+                      setLocalInput(text);
+                      setTimeout(() => {
+                        sendMessage({ text });
+                        setLocalInput("");
+                      }, 100);
+                    }}
+                  />
                 ) : (
-                  <Avatar className="h-8 w-8 mx-auto">
-                    {user.image && (
-                      <AvatarImage src={user.image} alt={user.name || ""} />
-                    )}
-                    <AvatarFallback className="bg-neutral-700 text-neutral-200 text-sm">
-                      {user.name?.charAt(0).toUpperCase() ||
-                        user.email?.charAt(0).toUpperCase() ||
-                        "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            )}
+                  <div className="space-y-6">
+                    {messages.map((message) => {
+                      // Add safety check for message structure
+                      if (!message || !message.id) {
+                        console.warn(
+                          "[Message Render] Invalid message:",
+                          message,
+                        );
+                        return null;
+                      }
 
-            {/* Expand/Collapse Button at Bottom */}
-            <div className="border-t border-neutral-700/50 p-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-                className="w-full hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 rounded-lg"
-              >
-                {isSidebarExpanded ? (
-                  <>
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    <span className="text-xs">Collapse</span>
-                  </>
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col min-w-0 relative bg-[#212121]">
-        {/* Conversation Switching Overlay */}
-        {isSwitchingConversation && (
-          <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-sm z-10 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
-              <span className="text-sm text-neutral-400">
-                Loading conversation...
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Messages */}
-        <div className="flex-1 overflow-hidden">
-          <div ref={scrollRef} className="h-full overflow-y-auto">
-            <div className="mx-auto max-w-3xl px-4 py-8">
-              {messages.length === 0 ? (
-                <EmptyState
-                  onExampleClick={(text) => {
-                    setLocalInput(text);
-                    setTimeout(() => {
-                      sendMessage({ text });
-                      setLocalInput("");
-                    }, 100);
-                  }}
-                />
-              ) : (
-                <div className="space-y-4">
-                  {messages.map((message) => {
-                    // Add safety check for message structure
-                    if (!message || !message.id) {
-                      console.warn(
-                        "[Message Render] Invalid message:",
-                        message,
+                      return (
+                        <MessageBubble
+                          key={message.id}
+                          message={message}
+                          isEditing={editingMessageId === message.id}
+                          editContent={editContent}
+                          onEditChange={setEditContent}
+                          onSaveEdit={saveEdit}
+                          onCancelEdit={() => setEditingMessageId(null)}
+                          onCopy={() => copyMessage(message)}
+                        />
                       );
-                      return null;
-                    }
-
-                    return (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        isEditing={editingMessageId === message.id}
-                        editContent={editContent}
-                        onEditChange={setEditContent}
-                        onSaveEdit={saveEdit}
-                        onCancelEdit={() => setEditingMessageId(null)}
-                        onCopy={() => copyMessage(message)}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-
-              <LoadingOverlay
-                isLoading={isLoading}
-                thinkingSteps={thinkingSteps}
-                onStop={stop}
-              />
-
-              {/* Error State - only show for real failures, not SDK /responses quirks */}
-              {error &&
-                !error.message?.includes("/responses") &&
-                !error.message?.includes("Failed to parse URL") && (
-                  <div className="mt-6 rounded-lg border border-red-200 bg-red-50/50 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-red-900">
-                        An error occurred. Please try again.
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const lastUserMessage = messages
-                            .filter((m) => m.role === "user")
-                            .pop();
-                          if (lastUserMessage) {
-                            const textContent = lastUserMessage.parts
-                              .filter((p) => p.type === "text")
-                              .map((p) => p.text)
-                              .join("");
-                            sendMessage({ text: textContent });
-                          }
-                        }}
-                        className="border-red-300 text-red-700 hover:bg-red-100"
-                      >
-                        Retry
-                      </Button>
-                    </div>
+                    })}
                   </div>
                 )}
+
+                <LoadingOverlay
+                  isLoading={isLoading}
+                  thinkingSteps={thinkingSteps}
+                  onStop={stop}
+                />
+
+                {/* Error State - only show for real failures, not SDK /responses quirks */}
+                {error &&
+                  !error.message?.includes("/responses") &&
+                  !error.message?.includes("Failed to parse URL") && (
+                    <div className="mt-6 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-destructive">
+                          An error occurred. Please try again.
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const lastUserMessage = messages
+                              .filter((m) => m.role === "user")
+                              .pop();
+                            if (lastUserMessage) {
+                              const textContent = lastUserMessage.parts
+                                .filter((p) => p.type === "text")
+                                .map((p) => p.text)
+                                .join("");
+                              sendMessage({ text: textContent });
+                            }
+                          }}
+                          className="border-destructive/30 text-destructive hover:bg-destructive/10"
+                        >
+                          Retry
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+          </div>
+
+          {/* Input Area - ChatGPT Style */}
+          <div className="bg-background pb-6 pt-2">
+            <div className="mx-auto max-w-3xl px-4">
+              <form onSubmit={handleSubmit} className="relative">
+                <div className="flex items-end gap-2 bg-slate-800 rounded-full px-8 py-6 border-none transition-all">
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors pb-1.5"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </button>
+                  <Textarea
+                    ref={textareaRef}
+                    rows={1}
+                    value={localInput}
+                    onChange={(e) => setLocalInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask anything..."
+                    disabled={isLoading}
+                    className="flex-1 bg-transparent border-0 text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-[15px] leading-relaxed min-h-6 max-h-[200px] py-1.5"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!localInput.trim() || isLoading}
+                    size="icon"
+                    variant={localInput.trim() ? "default" : "ghost"}
+                    className={cn(
+                      "h-8 w-8 rounded-full shrink-0 transition-all mb-0.5",
+                      localInput.trim() 
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </form>
+              {isLoading && (
+                <div className="mt-3 flex justify-center">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={stop} 
+                    className="h-8 text-xs gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
+                  >
+                    <div className="w-2 h-2 bg-current rounded-sm" />
+                    Stop generating
+                  </Button>
+                </div>
+              )}
+              <div className="mt-2 text-center">
+                <p className="text-[10px] text-muted-foreground/60">
+                  AI can make mistakes. Check important info.
+                </p>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Input Area - ChatGPT Style */}
-        <div className="bg-[#212121] pb-6">
-          <div className="mx-auto max-w-3xl px-4">
-            <form onSubmit={handleSubmit} className="relative">
-              <div className="flex items-center gap-2 bg-[#2f2f2f] rounded-full px-4 py-3 border border-neutral-700 focus-within:border-neutral-600 transition-colors">
-                <button
-                  type="button"
-                  className="text-neutral-400 hover:text-neutral-200 transition-colors"
-                >
-                  <Plus className="h-5 w-5" />
-                </button>
-                <Textarea
-                  ref={textareaRef}
-                  rows={1}
-                  value={localInput}
-                  onChange={(e) => setLocalInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask anything"
-                  disabled={isLoading}
-                  className="flex-1 bg-transparent border-0 text-white placeholder:text-neutral-400 resize-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-[15px] leading-relaxed min-h-6 max-h-[200px]"
-                />
-                <Button
-                  type="submit"
-                  disabled={!localInput.trim() || isLoading}
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full shrink-0 text-neutral-400 hover:text-white hover:bg-neutral-700"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </Button>
-              </div>
-            </form>
-            {isLoading && (
-              <p className="mt-2 text-center text-xs text-neutral-500">
-                <button onClick={stop} className="hover:underline">
-                  Stop generating
-                </button>
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

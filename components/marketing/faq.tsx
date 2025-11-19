@@ -50,32 +50,32 @@ export default function FAQSection() {
   }
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-4 font-sans">
+    <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-background">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-medium text-foreground mb-4 font-serif text-balance">
             Frequently Asked Questions
           </h2>
-          <p className="text-xl text-muted-foreground font-sans">
-            Everything you need to know about LogiGrow
+          <p className="text-lg text-muted-foreground font-sans text-balance">
+            Everything you need to know about LogiGrow.
           </p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-4">
           {faqData.map((item, index) => {
             const isOpen = openItems.includes(index)
 
             return (
-              <div key={index} className="border rounded-lg overflow-hidden">
+              <div key={index} className="border-b border-border/40 last:border-0">
                 <button
                   onClick={() => toggleItem(index)}
-                  className="w-full px-6 py-4 flex justify-between items-center gap-4 text-left hover:bg-secondary transition-colors"
+                  className="w-full py-6 flex justify-between items-center gap-4 text-left hover:text-primary transition-colors group"
                   aria-expanded={isOpen}
                 >
-                  <span className="font-medium text-foreground font-sans">{item.question}</span>
+                  <span className="text-lg font-medium text-foreground group-hover:text-primary font-sans">{item.question}</span>
                   <ChevronDown
                     className={cn(
-                      "h-5 w-5 text-muted-foreground shrink-0 transition-transform",
+                      "h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300",
                       isOpen && "rotate-180"
                     )}
                   />
@@ -83,11 +83,11 @@ export default function FAQSection() {
 
                 <div
                   className={cn(
-                    "overflow-hidden transition-all duration-300",
-                    isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    "overflow-hidden transition-all duration-300 ease-in-out",
+                    isOpen ? "max-h-96 opacity-100 mb-6" : "max-h-0 opacity-0"
                   )}
                 >
-                  <div className="px-6 pb-4 text-muted-foreground font-sans leading-relaxed">
+                  <div className="text-muted-foreground font-sans leading-relaxed pr-8">
                     {item.answer}
                   </div>
                 </div>

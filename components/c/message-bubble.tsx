@@ -39,14 +39,14 @@ export function MessageBubble({
           <Textarea
             value={editContent}
             onChange={(e) => onEditChange(e.target.value)}
-            className="mb-2 w-full rounded-lg border border-slate-300 focus:border-amber-400"
+            className="mb-2 w-full rounded-lg border border-input focus:border-primary"
             rows={3}
           />
           <div className="flex gap-2 justify-end">
-            <Button size="sm" onClick={onSaveEdit} className="bg-amber-500 hover:bg-amber-600 text-white">
+            <Button size="sm" onClick={onSaveEdit} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               Save
             </Button>
-            <Button size="sm" variant="outline" onClick={onCancelEdit} className="border-slate-300">
+            <Button size="sm" variant="outline" onClick={onCancelEdit} className="border-input hover:bg-accent hover:text-accent-foreground">
               Cancel
             </Button>
           </div>

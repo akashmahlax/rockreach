@@ -34,38 +34,38 @@ const testimonials = [
 
 export function Testimonials() {
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
+    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/30">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-4 font-sans">
+          <h2 className="text-3xl sm:text-4xl font-medium text-foreground mb-4 font-serif text-balance">
             Loved by sales teams
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-sans">
-            Don&apos;t just take our word for it—here&apos;s what our customers have to say
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-sans text-balance">
+            Don&apos;t just take our word for it—here&apos;s what our customers have to say.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="border">
-              <CardContent className="pt-6">
+            <Card key={index} className="border-none shadow-sm bg-background/50 backdrop-blur-sm hover:bg-background transition-colors duration-300">
+              <CardContent className="pt-8 px-8 pb-8">
                 {/* Rating */}
-                <div className="flex gap-1 mb-4">
+                <div className="flex gap-0.5 mb-6">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
                   ))}
                 </div>
 
                 {/* Content */}
-                <p className="text-foreground leading-relaxed mb-6 font-sans">
+                <blockquote className="text-lg text-foreground leading-relaxed mb-8 font-serif italic">
                   &quot;{testimonial.content}&quot;
-                </p>
+                </blockquote>
 
                 {/* Author */}
-                <div className="flex items-center gap-3">
-                  <Avatar>
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-10 w-10 border border-border">
                     <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
+                    <AvatarFallback className="bg-primary/10 text-primary font-serif">
                       {testimonial.name
                         .split(" ")
                         .map((n) => n[0])
@@ -73,9 +73,9 @@ export function Testimonials() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-semibold text-foreground font-sans">{testimonial.name}</div>
-                    <div className="text-sm text-muted-foreground font-sans">
-                      {testimonial.role} at {testimonial.company}
+                    <div className="font-medium text-foreground font-sans text-sm">{testimonial.name}</div>
+                    <div className="text-xs text-muted-foreground font-sans">
+                      {testimonial.role}, {testimonial.company}
                     </div>
                   </div>
                 </div>

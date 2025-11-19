@@ -19,27 +19,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import SignIn from "@/components/auth/sign-in"
 import SignOut from "@/components/auth/sign-out"
 import { useTheme } from "next-themes"
-import { cn } from "@/lib/utils"
-import { 
-  authenticatedNav, 
-  docsNav, 
-  toolsNav,
-  featuresNav
-} from "@/config/navigation"
 
 interface NavbarProps {
   user?: {
@@ -85,93 +69,37 @@ export function Navbar({ user }: NavbarProps) {
           <span className="hidden sm:inline-block font-serif text-xl font-medium tracking-tight">LogiGrow</span>
         </Link>
 
-        {/* Desktop Navigation - Minimal with dropdowns */}
-        <NavigationMenu className="hidden md:flex">
-          <NavigationMenuList>
-            {/* Home - Always visible as simple link */}
-            <NavigationMenuItem>
-              <Link href="/" legacyBehavior passHref>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                  Home
-                </NavigationMenuLink>
+        {/* Desktop Navigation - Minimal & Flat */}
+        <div className="hidden md:flex items-center gap-8">
+          {!isAuthenticated ? (
+            <>
+              <Link href="/#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Features
               </Link>
-            </NavigationMenuItem>
-
-            {/* Features dropdown - Public users */}
-            {!isAuthenticated && (
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Features</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4">
-                    {featuresNav.items.map((item) => (
-                      <ListItem
-                        key={item.href}
-                        title={item.title}
-                        href={item.href}
-                        icon={item.icon}
-                      >
-                        {item.description}
-                      </ListItem>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            )}
-
-            {/* Dashboard - Authenticated users only */}
-            {isAuthenticated && (
-              <>
-                {authenticatedNav.map((item) => (
-                  <NavigationMenuItem key={item.href}>
-                    <Link href={item.href} legacyBehavior passHref>
-                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                        {item.title}
-                      </NavigationMenuLink>
-                    </Link>
-                  </NavigationMenuItem>
-                ))}
-
-                {/* Tools Dropdown - Authenticated users */}
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Tools</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4">
-                      {toolsNav.items.map((item) => (
-                        <ListItem
-                          key={item.href}
-                          title={item.title}
-                          href={item.href}
-                          icon={item.icon}
-                        >
-                          {item.description}
-                        </ListItem>
-                      ))}
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              </>
-            )}
-
-            {/* Docs Dropdown - Always visible */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Docs</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[400px] gap-3 p-4">
-                  {docsNav.items.map((item) => (
-                    <ListItem
-                      key={item.href}
-                      title={item.title}
-                      href={item.href}
-                      icon={item.icon}
-                    >
-                      {item.description}
-                    </ListItem>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
+              <Link href="/#pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Pricing
+              </Link>
+              <Link href="/docs/guide" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Docs
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Dashboard
+              </Link>
+              <Link href="/leads/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Leads
+              </Link>
+              <Link href="/email/campaigns" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Campaigns
+              </Link>
+              <Link href="/docs/guide" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Docs
+              </Link>
+            </>
+          )}
+        </div>
 
         {/* Right side actions */}
         <div className="flex items-center gap-2">
@@ -269,65 +197,69 @@ export function Navbar({ user }: NavbarProps) {
                     <Link href="/">Home</Link>
                   </Button>
 
-                  {isAuthenticated ? (
+                  {!isAuthenticated ? (
                     <>
-                      {authenticatedNav.map((item) => (
-                        <Button
-                          key={item.href}
-                          variant="ghost"
-                          asChild
-                          className="justify-start"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          <Link href={item.href}>{item.title}</Link>
-                        </Button>
-                      ))}
-                      
-                      <Separator className="my-2" />
-                      <p className="text-xs font-semibold text-muted-foreground px-2">TOOLS</p>
-                      
-                      {toolsNav.items.map((item) => (
-                        <Button
-                          key={item.href}
-                          variant="ghost"
-                          asChild
-                          className="justify-start"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          <Link href={item.href}>{item.title}</Link>
-                        </Button>
-                      ))}
+                      <Button
+                        variant="ghost"
+                        asChild
+                        className="justify-start"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        <Link href="/#features">Features</Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        asChild
+                        className="justify-start"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        <Link href="/#pricing">Pricing</Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        asChild
+                        className="justify-start"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        <Link href="/docs/guide">Docs</Link>
+                      </Button>
                     </>
                   ) : (
                     <>
-                      {featuresNav.items.map((item) => (
-                        <Button
-                          key={item.href}
-                          variant="ghost"
-                          asChild
-                          className="justify-start"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          <Link href={item.href}>{item.title}</Link>
-                        </Button>
-                      ))}
+                      <Button
+                        variant="ghost"
+                        asChild
+                        className="justify-start"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        <Link href="/dashboard">Dashboard</Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        asChild
+                        className="justify-start"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        <Link href="/leads/search">Search</Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        asChild
+                        className="justify-start"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        <Link href="/email/campaigns">Campaigns</Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        asChild
+                        className="justify-start"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        <Link href="/docs/guide">Docs</Link>
+                      </Button>
                     </>
                   )}
-                  
-                  <Separator className="my-2" />
-                  <p className="text-xs font-semibold text-muted-foreground px-2">DOCS</p>
-                  
-                  {docsNav.items.map((item) => (
-                    <Button
-                      key={item.href}
-                      variant="ghost"
-                      asChild
-                      className="justify-start"
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      <Link href={item.href}>{item.title}</Link>
-                    </Button>
-                  ))}
                 </div>
 
                 {isAuthenticated && (
@@ -378,32 +310,3 @@ export function Navbar({ user }: NavbarProps) {
     </nav>
   )
 }
-
-const ListItem = React.forwardRef<
-  React.ElementRef<"a">,
-  React.ComponentPropsWithoutRef<"a"> & { icon?: React.ComponentType<{ className?: string }>; title: string }
->(({ className, title, children, icon: Icon, ...props }, ref) => {
-  return (
-    <li>
-      <NavigationMenuLink asChild>
-        <a
-          ref={ref}
-          className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            className
-          )}
-          {...props}
-        >
-          <div className="flex items-center gap-2">
-            {Icon && <Icon className="h-4 w-4" />}
-            <div className="text-sm font-medium leading-none">{title}</div>
-          </div>
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-            {children}
-          </p>
-        </a>
-      </NavigationMenuLink>
-    </li>
-  )
-})
-ListItem.displayName = "ListItem"
