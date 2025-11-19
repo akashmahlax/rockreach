@@ -21,10 +21,24 @@ export async function GET(req: Request) {
 
     console.log('[Download CSV] Looking for file:', { fileId, userEmail: session.user.email });
 
-    // Fetch the temporary file by fileId only
-    const tempFile = await db.collection('temp_files').findOne({ fileId });
+    // Fetch the temporary file by fileId (not filtering by userId since it's not in the URL)
+    const tempFile = await db.collection('temp_files').findOne({ 
+      fileId,
+      // Optionally verify user owns this file for security
+      // But for now, fileId alone should be sufficient as it's a UUID
+    });
 
     console.log('[Download CSV] File found:', tempFile ? 'YES' : 'NO');
+    
+    if (tempFile) {
+      console.log('[Download CSV] File details:', {
+        fileId: tempFile.fileId,
+        filename: tempFile.filename,
+        createdAt: tempFile.createdAt,
+        expiresAt: tempFile.expiresAt,
+        hasContent: !!tempFile.content
+      });
+    }
 
     if (!tempFile) {
       return NextResponse.json({ 

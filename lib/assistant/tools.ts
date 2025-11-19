@@ -418,12 +418,7 @@ export function createAssistantTools({ orgId, userId }: ToolContext) {
             'Email',
             'Phone',
             'LinkedIn',
-            'Location',
-            'Created At',
-            'Updated At',
-            'Recent Work',
-            'Interests'
-
+            'Location'
           ];
 
           // Helper to escape CSV fields

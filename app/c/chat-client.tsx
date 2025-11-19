@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,7 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
   // Track conversation switching for loading overlay
   const [isSwitchingConversation, setIsSwitchingConversation] = useState(false);
   const [isConversationsLoading, setIsConversationsLoading] = useState(true);
+  const [shouldRefreshConversations, setShouldRefreshConversations] = useState(false);
 
   // Local input state for the textarea
   const [localInput, setLocalInput] = useState("");
@@ -115,15 +116,29 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
 
           console.log("[onFinish] ✓ Saved to MongoDB successfully");
 
-          // Reload conversations to update sidebar with latest data (title, message count)
-          await fetchConversations();
-
-          // Update local state to reflect what's in DB
+          // Optimistic update: Update local state immediately
           setConversations((prev) =>
-            prev.map((c) =>
-              c.id === activeConvId ? { ...c, messages: formattedMessages } : c,
-            ),
+            prev.map((c) => {
+              if (c.id === activeConvId) {
+                // Update title if it's first message
+                const shouldUpdateTitle = formattedMessages.length === 2 && c.title === "New chat";
+                const newTitle = shouldUpdateTitle 
+                  ? formattedMessages[0].parts.find(p => p.type === 'text')?.text?.slice(0, 50) || "New chat"
+                  : c.title;
+                
+                return { 
+                  ...c, 
+                  title: newTitle,
+                  messages: formattedMessages,
+                  createdAt: c.createdAt || Date.now()
+                };
+              }
+              return c;
+            }),
           );
+
+          // Schedule a debounced refresh to sync with server (will use Redis cache)
+          setShouldRefreshConversations(true);
         } catch (error) {
           console.error("[onFinish] ✗ Failed to save:", error);
         }
@@ -313,22 +328,28 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
-  // Load conversations from MongoDB on mount
-  useEffect(() => {
-    fetchConversations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Conversations are now auto-saved to MongoDB via API calls
-
-  // Fetch conversations from MongoDB
-  const fetchConversations = async () => {
-    setIsConversationsLoading(true);
+  // Fetch conversations from MongoDB/Redis (uses cache)
+  const fetchConversations = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setIsConversationsLoading(true);
+    }
     try {
-      const res = await fetch("/api/assistant/conversations");
+      const res = await fetch("/api/assistant/conversations", {
+        // Use cache-first strategy
+        headers: {
+          'Cache-Control': 'max-age=60',
+        },
+      });
       if (res.ok) {
         const data = await res.json();
-        setConversations(data);
+        
+        // Only update if data actually changed (prevent unnecessary re-renders)
+        setConversations((prev) => {
+          const hasChanged = JSON.stringify(prev.map(c => ({ id: c.id, title: c.title }))) !== 
+                             JSON.stringify(data.map((c: Conversation) => ({ id: c.id, title: c.title })));
+          return hasChanged ? data : prev;
+        });
+        
         if (data.length > 0 && !activeConvId) {
           setActiveConvId(data[0].id);
         }
@@ -336,11 +357,31 @@ export function ChatClient({ conversationId, user }: ChatClientProps) {
     } catch (error) {
       console.error("Error fetching conversations:", error);
     } finally {
-      setIsConversationsLoading(false);
+      if (showLoading) {
+        setIsConversationsLoading(false);
+      }
     }
-  };
+  }, [activeConvId]);
 
-  // Save conversation to MongoDB
+  // Load conversations from MongoDB on mount
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  // Debounced refresh after AI response completes (uses Redis cache)
+  useEffect(() => {
+    if (shouldRefreshConversations) {
+      const timer = setTimeout(() => {
+        console.log('[Debounced Refresh] Syncing conversations from cache');
+        fetchConversations(false); // Don't show loading spinner for background refresh
+        setShouldRefreshConversations(false);
+      }, 1500); // Wait 1.5s to batch multiple updates
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shouldRefreshConversations, fetchConversations]);
+
+  // Conversations are now auto-saved to MongoDB via API calls
   
   const createNewConversation = () => {
     // Redirect to API route that creates conversation in MongoDB first

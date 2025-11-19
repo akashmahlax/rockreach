@@ -32,7 +32,8 @@ export async function GET(req: Request) {
       if (!conversation) {
         conversation = await getConversation(conversationId, userId);
         if (conversation) {
-          await cacheSet(cacheKey, conversation, 300); // 5 min cache
+          // Cache for 10 minutes - conversation content rarely changes
+          await cacheSet(cacheKey, conversation, 600);
         }
       }
 
@@ -56,7 +57,8 @@ export async function GET(req: Request) {
 
     if (!conversations) {
       conversations = await getConversations(userId, orgId);
-      await cacheSet(cacheKey, conversations, 60); // 1 min cache
+      // Cache for 3 minutes - list updates are infrequent
+      await cacheSet(cacheKey, conversations, 180);
     }
 
     return NextResponse.json(conversations);
